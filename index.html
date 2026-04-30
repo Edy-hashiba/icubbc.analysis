@@ -1,292 +1,897 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ICU野球分析 完全版</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ICU野球分析（beta）</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 1rem; }
+    .player-video { max-width: 220px; display:block; margin-top:0.5rem; }
+    .score-img { max-width: 300px; display:block; margin-top:0.5rem; }
+    .small-muted { font-size:0.9rem; color:#6c757d; }
+    .pos-tag { display:inline-block; background:#e9ecef; padding:4px 8px; border-radius:12px; margin-right:6px; margin-bottom:6px; cursor:pointer; }
+    .zone-canvas { border:1px solid #ddd; background:#fff; touch-action:none; display:block; }
+    .shape-handle { fill:#fff; stroke:#333; stroke-width:1; cursor:se-resize; }
+    .shape-selected { stroke:#007bff; stroke-width:2; }
+    .controls-row { gap:8px; display:flex; align-items:center; flex-wrap:wrap; }
+    .svg-wrap { display:flex; flex-direction:column; gap:12px; align-items:stretch; }
+    .svg-box { border:1px solid #ddd; padding:8px; background:#fafafa; position:relative; }
+    .selected-multi { outline:2px dashed #007bff; padding:2px; border-radius:4px; }
+    .toast-body { max-width:320px; word-break:break-word; }
+    .layer-controls { display:flex; gap:6px; }
+    .template-list { max-height:160px; overflow:auto; }
+    .label-badge { background: rgba(0,0,0,0.6); color:#fff; padding:2px 6px; border-radius:6px; font-size:0.8rem; pointer-events:none; }
+    .canvas-toolbar { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .touch-hint { font-size:0.85rem; color:#666; }
+    .player-zone-thumb { width:320px; height:320px; border:1px solid #ddd; background:#fff; display:block; }
+    .thumb-caption { font-size:0.9rem; color:#333; margin-top:6px; }
+    .modal-svgs { display:flex; gap:12px; flex-wrap:wrap; }
+    .modal-svgs .svg-card { width:340px; }
+
+    .modal-backdrop-custom {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1040;
+    }
+    .modal-custom {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
+      z-index: 1050;
+      max-height: 90vh;
+      overflow:auto;
+      width: 95%;
+      max-width: 1100px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+    }
+
+    .nav-tabs .nav-link { cursor: pointer; }
+  </style>
 </head>
 <body>
-<div id="app" class="container py-4">
-  <h2 class="mb-4">ICU野球分析（完全版）</h2>
-
-  <!-- 管理者ログイン -->
-  <div class="card p-3 mb-4">
-    <h5>管理者ログイン</h5>
-    <div class="row g-2">
-      <div class="col-md-5">
-        <input v-model="loginForm.email" class="form-control" placeholder="Email" />
-      </div>
-      <div class="col-md-5">
-        <input v-model="loginForm.password" type="password" class="form-control" placeholder="Password" />
-      </div>
-      <div class="col-md-2">
-        <button class="btn btn-primary w-100" @click="loginAdmin">ログイン</button>
-      </div>
-    </div>
-    <div class="mt-2 text-success">全ユーザーが編集可能</div>
-  </div>
-
-  <!-- 選手追加 -->
-  <div class="card p-3 mb-4">
-    <h5>選手追加</h5>
-    <div class="row g-2">
-      <div class="col-md-4">
-        <input v-model="newPlayer.nameFamily" class="form-control" placeholder="姓" />
-      </div>
-      <div class="col-md-4">
-        <input v-model="newPlayer.nameGiven" class="form-control" placeholder="名" />
-      </div>
-      <div class="col-md-2">
-        <input v-model.number="newPlayer.number" type="number" class="form-control" placeholder="背番号" />
-      </div>
-      <div class="col-md-2">
-        <select v-model="newPlayer.pitchHand" class="form-select">
-          <option value="R">右投</option>
-          <option value="L">左投</option>
-          <option value="B">両投</option>
+  <div id="app" class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>ICU野球分析（beta）</h3>
+      <div class="d-flex align-items-center gap-2">
+        <label class="small-muted mb-0 me-1">言語</label>
+        <select v-model="lang" @change="applyLang" class="form-select form-select-sm" style="width:auto">
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
         </select>
       </div>
-
-      <div class="col-md-6">
-        <textarea v-model="newPlayer.memo" class="form-control" rows="3" placeholder="メモ"></textarea>
-      </div>
-
-      <div class="col-md-6">
-        <input type="file" accept="video/*" class="form-control" @change="onVideoSelected" />
-      </div>
-
-      <div class="col-12 text-end">
-        <button class="btn btn-success" @click="addPlayer">保存</button>
-      </div>
     </div>
-  </div>
 
-  <!-- 選手一覧 -->
-  <div class="card p-3 mb-4">
-    <h5>選手一覧</h5>
-    <ul class="list-group">
-      <li class="list-group-item d-flex justify-content-between align-items-center"
-          v-for="p in players"
-          :key="p.id">
-        <div>
-          <strong>{{ p.nameFamily }} {{ p.nameGiven }}</strong>
-          (#{{ p.number }})
-          <div class="small text-muted">{{ p.memo }}</div>
-        </div>
-        <div>
-          <button class="btn btn-sm btn-danger" @click="deletePlayer(p)">削除</button>
-        </div>
-      </li>
+    <ul class="nav nav-tabs mb-3" role="tablist">
+      <li class="nav-item" role="presentation"><a class="nav-link" :class="{active:tab==='add'}" @click="tab='add'">選手追加</a></li>
+      <li class="nav-item" role="presentation"><a class="nav-link" :class="{active:tab==='search'}" @click="tab='search'">選手・チーム検索</a></li>
+      <li class="nav-item" role="presentation"><a class="nav-link" :class="{active:tab==='match'}" @click="tab='match'">試合結果</a></li>
+      <li class="nav-item" role="presentation"><a class="nav-link" :class="{active:tab==='settings'}" @click="tab='settings'">設定</a></li>
     </ul>
-  </div>
 
-  <!-- 試合結果 -->
-  <div class="card p-3 mb-4">
-    <h5>試合結果登録</h5>
-    <div class="row g-2">
-      <div class="col-md-4">
-        <input type="date" v-model="newMatch.date" class="form-control" />
-      </div>
-      <div class="col-md-4">
-        <input type="file" accept="image/*" class="form-control" @change="onScoreImageSelected" />
-      </div>
-      <div class="col-md-4">
-        <button class="btn btn-primary w-100" @click="addMatch">保存</button>
+    <!-- 選手追加タブ（図形編集含む） -->
+    <div v-if="tab==='add'">
+      <div class="card p-3">
+        <h5 class="card-title">選手を追加</h5>
+        <div class="row g-2">
+          <div class="col-md-4"><label class="form-label">姓</label><input v-model="newPlayer.nameFamily" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">ミドルネーム</label><input v-model="newPlayer.nameMiddle" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">名</label><input v-model="newPlayer.nameGiven" class="form-control"></div>
+
+          <div class="col-md-4"><label class="form-label">フリガナ（姓）</label><input v-model="newPlayer.furiganaFamily" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">フリガナ（ミドル）</label><input v-model="newPlayer.furiganaMiddle" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">フリガナ（名）</label><input v-model="newPlayer.furiganaGiven" class="form-control"></div>
+
+          <div class="col-md-2"><label class="form-label">背番号</label><input v-model.number="newPlayer.number" type="number" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label">投</label><select v-model="newPlayer.pitchHand" class="form-select"><option value="R">右</option><option value="L">左</option><option value="B">両</option></select></div>
+          <div class="col-md-2"><label class="form-label">打</label><select v-model="newPlayer.batHand" class="form-select"><option value="R">右</option><option value="L">左</option><option value="B">両</option></select></div>
+
+          <div class="col-md-4">
+            <label class="form-label">ポジション</label>
+            <div class="d-flex">
+              <select v-model="selectedPos" class="form-select me-2">
+                <option v-for="p in positions" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <button class="btn btn-outline-primary" @click="addPosition()">＋</button>
+            </div>
+            <div class="mt-2">
+              <span v-for="(p,i) in newPlayer.positions" :key="i" class="pos-tag" @click="removePosition(i)">{{ p }} ✕</span>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">チーム</label>
+            <select v-model="newPlayer.teamType" class="form-select">
+              <option value="ICU">ICU</option>
+              <option value="OTHER">他校</option>
+            </select>
+          </div>
+          <div class="col-md-4" v-if="newPlayer.teamType==='OTHER'">
+            <label class="form-label">学校</label>
+            <select v-model="newPlayer.school" class="form-select">
+              <option v-for="s in schools" :key="s" :value="s">{{ s }}</option>
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">動画</label>
+            <input type="file" accept="video/*" @change="onVideoSelected" class="form-control">
+            <video v-if="newPlayer.videoUrl" :src="newPlayer.videoUrl" controls class="player-video"></video>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">メモ</label>
+            <textarea v-model="newPlayer.memo" class="form-control" rows="3"></textarea>
+          </div>
+
+          <!-- 図形編集 -->
+          <div class="col-12 mt-3">
+            <label class="form-label">ストライクゾーン編集（投球 / 打撃）</label>
+            <div class="card p-2">
+              <div class="d-flex gap-2 mb-2 align-items-center">
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-secondary" @click="zoneAdd('rect', activeCanvas)">四角</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="zoneAdd('circle', activeCanvas)">丸</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="zoneAdd('triangle', activeCanvas)">三角</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="zoneAdd('line', activeCanvas)">線</button>
+                </div>
+
+                <div class="ms-2">
+                  <label class="small-muted mb-0 me-1">色</label>
+                  <input type="color" v-model="zoneTool.color">
+                </div>
+                <div class="ms-2">
+                  <label class="small-muted mb-0 me-1">不透明度</label>
+                  <input type="range" min="0.1" max="1" step="0.1" v-model.number="zoneTool.opacity">
+                </div>
+
+                <div class="ms-3">
+                  <label class="small-muted mb-0 me-1">編集対象</label>
+                  <select v-model="activeCanvas" class="form-select form-select-sm" style="width:auto">
+                    <option value="pitch">投球（上）</option>
+                    <option value="bat">打撃（下）</option>
+                  </select>
+                </div>
+
+                <div class="ms-auto layer-controls">
+                  <button class="btn btn-sm btn-outline-secondary" @click="bringForward()">前面へ</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="sendBackward()">背面へ</button>
+                  <button class="btn btn-sm btn-outline-danger" @click="clearCanvas(activeCanvas)">キャンバスをクリア</button>
+                </div>
+              </div>
+
+              <div class="d-flex gap-3">
+                <div style="flex:1">
+                  <div class="svg-box mb-2">
+                    <div class="canvas-toolbar">
+                      <strong>投球（上）</strong>
+                      <div class="small-muted ms-2">（マスを縮小して余白にも図形を置けます）</div>
+                      <div class="ms-auto touch-hint">2本指でキャンバス拡大/縮小</div>
+                    </div>
+                    <div style="position:relative;">
+                      <svg ref="svgPitch" :width="svgWidth" :height="svgHeight" xmlns="http://www.w3.org/2000/svg"
+                           :style="{touchAction: 'none'}"
+                           @mousedown="onSvgMouseDown($event,'pitch')" @mousemove="onSvgMouseMove($event,'pitch')" @mouseup="onSvgMouseUp('pitch')" @mouseleave="onSvgMouseUp('pitch')"
+                           @touchstart.prevent="onTouchStart($event,'pitch')" @touchmove.prevent="onTouchMove($event,'pitch')" @touchend.prevent="onTouchEnd($event,'pitch')">
+                        <g :transform="pitchTransform">
+                          <g :transform="`translate(${editor.marginLeft},${editor.marginTop})`">
+                            <g transform="translate(20,20)">
+                              <rect :width="editor.gridW" :height="editor.gridH" fill="none" stroke="#333"/>
+                              <g stroke="#999">
+                                <line :x1="editor.cell" y1="0" :x2="editor.cell" :y2="editor.gridH"/>
+                                <line :x1="editor.cell*2" y1="0" :x2="editor.cell*2" :y2="editor.gridH"/>
+                                <line x1="0" :y1="editor.cell" :x2="editor.gridW" :y2="editor.cell"/>
+                                <line x1="0" :y1="editor.cell*2" :x2="editor.gridW" :y2="editor.cell*2"/>
+                              </g>
+                            </g>
+
+                            <g v-for="s in zoneShapesPitch" :key="s.id" :transform="`translate(${s.x},${s.y}) rotate(${s.angle||0} ${s.cx||0} ${s.cy||0})`" @mousedown.stop.prevent="shapeMouseDown($event,'pitch',s)" @touchstart.stop.prevent="shapeTouchStart($event,'pitch',s)">
+                              <rect v-if="s.type==='rect'" :width="s.w" :height="s.h" :fill="s.color" :opacity="s.opacity" :stroke="isSelected(s) ? '#007bff' : '#333'"></rect>
+                              <circle v-else-if="s.type==='circle'" :cx="s.r" :cy="s.r" :r="s.r" :fill="s.color" :opacity="s.opacity" :stroke="isSelected(s) ? '#007bff' : '#333'"></circle>
+                              <polygon v-else-if="s.type==='triangle'" :points="trianglePoints(s)" :fill="s.color" :opacity="s.opacity" :stroke="isSelected(s) ? '#007bff' : '#333'"></polygon>
+                              <line v-else-if="s.type==='line'" :x1="0" :y1="0" :x2="s.x2 - s.x" :y2="s.y2 - s.y" :stroke="s.color" :stroke-width="2" :opacity="s.opacity"></line>
+                              <foreignObject v-if="s.label" :x="0" :y="-22" :width="200" :height="20"><div xmlns="http://www.w3.org/1999/xhtml"><span class="label-badge">{{ s.label }}</span></div></foreignObject>
+                            </g>
+                          </g>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div class="svg-box">
+                    <div class="canvas-toolbar">
+                      <strong>打撃（下）</strong>
+                      <div class="small-muted ms-2">（マスを縮小して余白にも図形を置けます）</div>
+                      <div class="ms-auto touch-hint">2本指でキャンバス拡大/縮小</div>
+                    </div>
+                    <div style="position:relative;">
+                      <svg ref="svgBat" :width="svgWidth" :height="svgHeight" xmlns="http://www.w3.org/2000/svg"
+                           :style="{touchAction: 'none'}"
+                           @mousedown="onSvgMouseDown($event,'bat')" @mousemove="onSvgMouseMove($event,'bat')" @mouseup="onSvgMouseUp('bat')" @mouseleave="onSvgMouseUp('bat')"
+                           @touchstart.prevent="onTouchStart($event,'bat')" @touchmove.prevent="onTouchMove($event,'bat')" @touchend.prevent="onTouchEnd($event,'bat')">
+                        <g :transform="batTransform">
+                          <g :transform="`translate(${editor.marginLeft},${editor.marginTop})`">
+                            <g transform="translate(20,20)">
+                              <rect :width="editor.gridW" :height="editor.gridH" fill="none" stroke="#333"/>
+                              <g stroke="#999">
+                                <line :x1="editor.cell" y1="0" :x2="editor.cell" :y2="editor.gridH"/>
+                                <line :x1="editor.cell*2" y1="0" :x2="editor.cell*2" :y2="editor.gridH"/>
+                                <line x1="0" :y1="editor.cell" :x2="editor.gridW" :y2="editor.cell"/>
+                                <line x1="0" :y1="editor.cell*2" :x2="editor.gridW" :y2="editor.cell*2"/>
+                              </g>
+                            </g>
+
+                            <g v-for="s in zoneShapesBat" :key="s.id" :transform="`translate(${s.x},${s.y}) rotate(${s.angle||0} ${s.cx||0} ${s.cy||0})`" @mousedown.stop.prevent="shapeMouseDown($event,'bat',s)" @touchstart.stop.prevent="shapeTouchStart($event,'bat',s)">
+                              <rect v-if="s.type==='rect'" :width="s.w" :height="s.h" :fill="s.color" :opacity="s.opacity" :stroke="isSelected(s) ? '#007bff' : '#333'"></rect>
+                              <circle v-else-if="s.type==='circle'" :cx="s.r" :cy="s.r" :r="s.r" :fill="s.color" :opacity="s.opacity" :stroke="isSelected(s) ? '#007bff' : '#333'"></circle>
+                              <polygon v-else-if="s.type==='triangle'" :points="trianglePoints(s)" :fill="s.color" :opacity="s.opacity" :stroke="isSelected(s) ? '#007bff' : '#333'"></polygon>
+                              <line v-else-if="s.type==='line'" :x1="0" :y1="0" :x2="s.x2 - s.x" :y2="s.y2 - s.y" :stroke="s.color" :stroke-width="2" :opacity="s.opacity"></line>
+                              <foreignObject v-if="s.label" :x="0" :y="-22" :width="200" :height="20"><div xmlns="http://www.w3.org/1999/xhtml"><span class="label-badge">{{ s.label }}</span></div></foreignObject>
+                            </g>
+                          </g>
+                        </g>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="width:360px;">
+                  <div v-if="multiSelectedCount>0">
+                    <h6>選択中（{{ multiSelectedCount }}）</h6>
+                    <div class="mb-2">
+                      <label class="form-label">色（選択中すべてに適用）</label>
+                      <input type="color" v-model="multiColor" class="form-control form-control-color" @input="applyMultiColor">
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label">不透明度（選択中すべてに適用）</label>
+                      <input type="range" min="0.1" max="1" step="0.1" v-model.number="multiOpacity" @input="applyMultiOpacity">
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label">ラベル（選択中すべてに適用）</label>
+                      <select v-model="multiLabel" class="form-select" @change="applyMultiLabel">
+                        <option value="">（なし）</option>
+                        <option v-for="l in labelOptions" :key="l" :value="l">{{ l }}</option>
+                      </select>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                      <button class="btn btn-sm btn-danger" @click="deleteSelectedShapes">削除（選択中）</button>
+                      <button class="btn btn-sm btn-secondary" @click="clearSelection">選択解除</button>
+                    </div>
+                    <hr>
+                  </div>
+
+                  <div v-if="isSingleSelection">
+                    <h6>単一選択</h6>
+                    <div class="mb-2">
+                      <label class="form-label">色</label>
+                      <input type="color" v-model="selectedShape.color" class="form-control form-control-color" @input="updateShapeProps">
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label">不透明度</label>
+                      <input type="range" min="0.1" max="1" step="0.1" v-model.number="selectedShape.opacity" @input="updateShapeProps">
+                    </div>
+                    <div class="mb-2">
+                      <label class="form-label">ラベル</label>
+                      <select v-model="selectedShape.label" class="form-select" @change="updateShapeProps">
+                        <option value="">（なし）</option>
+                        <option v-for="l in labelOptions" :key="l" :value="l">{{ l }}</option>
+                      </select>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                      <button class="btn btn-sm btn-danger" @click="deleteSelectedShapes">削除</button>
+                      <button class="btn btn-sm btn-secondary" @click="clearSelection">選択解除</button>
+                    </div>
+                    <hr>
+                  </div>
+
+                  <div v-if="multiSelectedCount===0 && !isSingleSelection" class="small-muted">図形を追加して選択すると編集できます（Shiftクリックで複数選択）</div>
+
+                  <div class="mt-2">
+                    <h6>テンプレート</h6>
+                    <div class="mb-2">
+                      <input v-model="templateName" class="form-control mb-2" placeholder="テンプレート名">
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" @click="saveTemplate()">選択をテンプレート保存</button>
+                        <button class="btn btn-sm btn-outline-secondary" @click="saveAllAsTemplate()">キャンバス全体をテンプレート保存</button>
+                      </div>
+                    </div>
+
+                    <div class="template-list mb-2">
+                      <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center" v-for="t in templates" :key="t.id">
+                          <div>
+                            <strong>{{ t.name }}</strong>
+                            <div class="small-muted">図形数: {{ t.shapes.length }}</div>
+                          </div>
+                          <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary" @click="applyTemplateToCanvas(t, activeCanvas)">適用（現在のキャンバス）</button>
+                            <button class="btn btn-sm btn-outline-success" @click="applyTemplateToPlayer(t)">適用（選手へ）</button>
+                            <button class="btn btn-sm btn-danger" @click="removeTemplate(t.id)">削除</button>
+                          </div>
+                        </li>
+                        <li v-if="templates.length===0" class="list-group-item text-muted">テンプレートがありません</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <hr>
+
+                  <div>
+                    <strong>保存 / 読み込み / 画像出力</strong>
+                    <div class="small-muted">図形は選手データに紐づけて保存できます（投球/打撃別）。保存時は9マス＋上下左右1マス分の余白情報も一緒に保存されます。</div>
+                    <div class="mt-2 d-flex gap-2 flex-wrap">
+                      <button class="btn btn-sm btn-outline-primary" @click="saveZoneToPlayer('pitch')">投球を選手に保存</button>
+                      <button class="btn btn-sm btn-outline-primary" @click="saveZoneToPlayer('bat')">打撃を選手に保存</button>
+                      <button class="btn btn-sm btn-outline-secondary" @click="loadZoneFromPlayer('pitch')">選手の投球を読み込み</button>
+                      <button class="btn btn-sm btn-outline-secondary" @click="loadZoneFromPlayer('bat')">選手の打撃を読み込み</button>
+                    </div>
+
+                    <div class="mt-2 d-flex gap-2">
+                      <button class="btn btn-sm btn-outline-success" @click="exportZoneImage('pitch')">投球を画像で保存（余白含む）</button>
+                      <button class="btn btn-sm btn-outline-success" @click="exportZoneImage('bat')">打撃を画像で保存（余白含む）</button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="col-12 text-end mt-2">
+            <button class="btn btn-primary" @click="addPlayer()">追加</button>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- 検索タブ -->
+    <div v-if="tab==='search'">
+      <div class="card p-3 mb-3">
+        <h5>選手検索</h5>
+        <div class="row g-2">
+          <div class="col-md-3"><input v-model="search.qFamily" class="form-control" placeholder="姓"></div>
+          <div class="col-md-3"><input v-model="search.qTeam" class="form-control" placeholder="チーム"></div>
+          <div class="col-md-2"><button class="btn btn-secondary w-100" @click="doSearch()">検索</button></div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          <h6>チーム一覧</h6>
+          <ul class="list-group">
+            <li class="list-group-item" v-for="team in uniqueTeams" :key="team" @click="selectTeam(team)" style="cursor:pointer">{{ team }}</li>
+          </ul>
+        </div>
+
+        <div class="col-md-8">
+          <h6>選手一覧</h6>
+          <ul class="list-group">
+            <li class="list-group-item" v-for="p in searchResults" :key="p.id">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <a href="#" @click.prevent="viewPlayer(p)">{{ getFullName(p) }} ({{ p.number }})</a>
+                  <div class="text-muted small">{{ p.teamType === 'OTHER' ? p.school : p.teamType }}</div>
+                </div>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary" @click="viewPlayer(p)">表示</button>
+                  <button class="btn btn-sm btn-warning" @click="openEditPlayerModal(p)">編集</button>
+                  <button class="btn btn-sm btn-danger" @click="confirmDeletePlayer(p)">削除</button>
+                </div>
+              </div>
+            </li>
+            <li v-if="searchResults.length===0" class="list-group-item text-muted">該当なし</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- 試合タブ -->
+    <div v-if="tab==='match'">
+      <div class="card p-3">
+        <h5>試合結果登録</h5>
+        <div class="row g-2">
+          <div class="col-md-4"><label class="form-label">試合日</label><input type="date" v-model="newMatch.date" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label">スコア画像</label><input type="file" accept="image/*" @change="onScoreImageSelected" class="form-control"><img v-if="newMatch.imageUrl" :src="newMatch.imageUrl" class="score-img"></div>
+          <div class="col-12 text-end mt-2"><button class="btn btn-primary" @click="addMatch()">保存</button></div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <h6>保存済み試合</h6>
+        <ul class="list-group">
+          <li class="list-group-item" v-for="m in matches" :key="m.id">{{ m.date }} <img v-if="m.imageUrl" :src="m.imageUrl" style="height:40px; margin-left:10px;"></li>
+          <li v-if="matches.length===0" class="list-group-item text-muted">試合がありません</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 設定タブ -->
+    <div v-if="tab==='settings'">
+      <div class="card p-3">
+        <h5>設定</h5>
+        <div class="row g-2">
+          <div class="col-md-6"><label class="form-label">言語</label><select v-model="lang" @change="applyLang" class="form-select"><option value="ja">日本語</option><option value="en">English</option></select></div>
+
+          <div class="col-md-6">
+            <label class="form-label">学校登録</label>
+            <div class="input-group">
+              <input v-model="newSchool" class="form-control" placeholder="学校名">
+              <button class="btn btn-outline-secondary" @click="addSchool()">追加</button>
+            </div>
+            <div class="mt-2">
+              <ul class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center" v-for="s in schools" :key="s">{{ s }} <button class="btn btn-sm btn-danger" @click="removeSchool(s)">削除</button></li>
+                <li v-if="schools.length===0" class="list-group-item text-muted">学校が登録されていません</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="col-12 mt-3">
+            <label class="form-label">外部リンク（試合日程）</label>
+            <div class="d-flex gap-2">
+              <input v-model="settings.scheduleUrl" class="form-control" placeholder="https://...">
+              <button class="btn btn-primary" @click="saveSettings()">保存</button>
+            </div>
+            <div class="form-text">ここで設定したURLが試合結果タブのリンクに反映されます。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 選手詳細モーダル（サムネイルの図形座標補正を適用） -->
+    <div v-if="showPlayerModal" class="modal-backdrop-custom" @click="closePlayerModal"></div>
+    <div v-if="showPlayerModal" class="modal-custom bg-white rounded" role="dialog" aria-modal="true" aria-label="選手詳細">
+      <div class="modal-content">
+        <div class="modal-header p-3">
+          <h5 class="modal-title">{{ getFullName(currentPlayer) }}</h5>
+          <button type="button" class="btn-close" @click="closePlayerModal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <p><strong>フリガナ:</strong> {{ getFullFurigana(currentPlayer) }}</p>
+          <p><strong>背番号:</strong> {{ currentPlayer.number }}</p>
+          <p><strong>チーム:</strong> {{ currentPlayer.teamType === 'OTHER' ? currentPlayer.school : currentPlayer.teamType }}</p>
+          <p><strong>メモ:</strong> {{ currentPlayer.memo }}</p>
+          <div v-if="currentPlayer.videoUrl"><strong>動画:</strong><video :src="currentPlayer.videoUrl" controls class="player-video"></video></div>
+
+          <hr>
+
+          <div class="mt-3">
+            <h6>保存された図形（投球）</h6>
+            <div v-if="hasSavedZone(currentPlayer,'pitch')">
+              <div class="modal-svgs">
+                <div class="svg-card">
+                  <svg class="player-zone-thumb" :viewBox="thumbViewBox(getSavedZoneMeta(currentPlayer,'pitch'))" xmlns="http://www.w3.org/2000/svg" role="img" :aria-label="getFullName(currentPlayer) + ' 投球ゾーン'">
+                    <rect x="0" y="0" :width="thumbSizeW(getSavedZoneMeta(currentPlayer,'pitch'))" :height="thumbSizeH(getSavedZoneMeta(currentPlayer,'pitch'))" fill="#fff"></rect>
+
+                    <g :transform="`translate(${getSavedZoneMeta(currentPlayer,'pitch').margin + getSavedZoneMeta(currentPlayer,'pitch').wrapperPadding}, ${getSavedZoneMeta(currentPlayer,'pitch').margin + getSavedZoneMeta(currentPlayer,'pitch').wrapperPadding})`">
+                      <rect x="0" y="0" :width="getSavedZoneMeta(currentPlayer,'pitch').gridW" :height="getSavedZoneMeta(currentPlayer,'pitch').gridH" fill="none" stroke="#333"/>
+                      <g stroke="#999">
+                        <line :x1="getSavedZoneMeta(currentPlayer,'pitch').cell" y1="0" :x2="getSavedZoneMeta(currentPlayer,'pitch').cell" :y2="getSavedZoneMeta(currentPlayer,'pitch').gridH"/>
+                        <line :x1="getSavedZoneMeta(currentPlayer,'pitch').cell*2" y1="0" :x2="getSavedZoneMeta(currentPlayer,'pitch').cell*2" :y2="getSavedZoneMeta(currentPlayer,'pitch').gridH"/>
+                        <line x1="0" :y1="getSavedZoneMeta(currentPlayer,'pitch').cell" :x2="getSavedZoneMeta(currentPlayer,'pitch').gridW" :y2="getSavedZoneMeta(currentPlayer,'pitch').cell"/>
+                        <line x1="0" :y1="getSavedZoneMeta(currentPlayer,'pitch').cell*2" :x2="getSavedZoneMeta(currentPlayer,'pitch').gridW" :y2="getSavedZoneMeta(currentPlayer,'pitch').cell*2"/>
+                      </g>
+                    </g>
+
+                    <g>
+                      <g v-for="s in getSavedZoneShapes(currentPlayer,'pitch')" :key="s.id">
+                        <!-- ここが重要: 保存時の絶対座標（marginLeft/marginTop含む）を meta で補正して描画 -->
+                        <rect v-if="s.type==='rect'" :x="(s.x - getSavedZoneMeta(currentPlayer,'pitch').marginLeft)" :y="(s.y - getSavedZoneMeta(currentPlayer,'pitch').marginTop)" :width="s.w" :height="s.h" :fill="s.color" :opacity="s.opacity" stroke="#333"></rect>
+                        <circle v-else-if="s.type==='circle'" :cx="(s.x - getSavedZoneMeta(currentPlayer,'pitch').marginLeft) + s.r" :cy="(s.y - getSavedZoneMeta(currentPlayer,'pitch').marginTop) + s.r" :r="s.r" :fill="s.color" :opacity="s.opacity" stroke="#333"></circle>
+                        <g v-else-if="s.type==='triangle'" :transform="`translate(${s.x - getSavedZoneMeta(currentPlayer,'pitch').marginLeft},${s.y - getSavedZoneMeta(currentPlayer,'pitch').marginTop}) rotate(${s.angle||0} ${s.cx||0} ${s.cy||0})`">
+                          <polygon :points="trianglePoints(s)" :fill="s.color" :opacity="s.opacity" stroke="#333"></polygon>
+                        </g>
+                        <line v-else-if="s.type==='line'" :x1="s.x - getSavedZoneMeta(currentPlayer,'pitch').marginLeft" :y1="s.y - getSavedZoneMeta(currentPlayer,'pitch').marginTop" :x2="s.x2 - getSavedZoneMeta(currentPlayer,'pitch').marginLeft" :y2="s.y2 - getSavedZoneMeta(currentPlayer,'pitch').marginTop" :stroke="s.color" stroke-width="2" :opacity="s.opacity"></line>
+                        <text v-if="s.label" :x="(s.x - getSavedZoneMeta(currentPlayer,'pitch').marginLeft)" :y="(s.y - getSavedZoneMeta(currentPlayer,'pitch').marginTop) - 8" font-size="12" fill="#fff" stroke="rgba(0,0,0,0.2)">{{ s.label }}</text>
+                      </g>
+                    </g>
+                  </svg>
+                  <div class="thumb-caption">投球（保存図）</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="small-muted">図形はありません</div>
+
+            <h6 class="mt-3">保存された図形（打撃）</h6>
+            <div v-if="hasSavedZone(currentPlayer,'bat')">
+              <div class="modal-svgs">
+                <div class="svg-card">
+                  <svg class="player-zone-thumb" :viewBox="thumbViewBox(getSavedZoneMeta(currentPlayer,'bat'))" xmlns="http://www.w3.org/2000/svg" role="img" :aria-label="getFullName(currentPlayer) + ' 打撃ゾーン'">
+                    <rect x="0" y="0" :width="thumbSizeW(getSavedZoneMeta(currentPlayer,'bat'))" :height="thumbSizeH(getSavedZoneMeta(currentPlayer,'bat'))" fill="#fff"></rect>
+
+                    <g :transform="`translate(${getSavedZoneMeta(currentPlayer,'bat').margin + getSavedZoneMeta(currentPlayer,'bat').wrapperPadding}, ${getSavedZoneMeta(currentPlayer,'bat').margin + getSavedZoneMeta(currentPlayer,'bat').wrapperPadding})`">
+                      <rect x="0" y="0" :width="getSavedZoneMeta(currentPlayer,'bat').gridW" :height="getSavedZoneMeta(currentPlayer,'bat').gridH" fill="none" stroke="#333"/>
+                      <g stroke="#999">
+                        <line :x1="getSavedZoneMeta(currentPlayer,'bat').cell" y1="0" :x2="getSavedZoneMeta(currentPlayer,'bat').cell" :y2="getSavedZoneMeta(currentPlayer,'bat').gridH"/>
+                        <line :x1="getSavedZoneMeta(currentPlayer,'bat').cell*2" y1="0" :x2="getSavedZoneMeta(currentPlayer,'bat').cell*2" :y2="getSavedZoneMeta(currentPlayer,'bat').gridH"/>
+                        <line x1="0" :y1="getSavedZoneMeta(currentPlayer,'bat').cell" :x2="getSavedZoneMeta(currentPlayer,'bat').gridW" :y2="getSavedZoneMeta(currentPlayer,'bat').cell"/>
+                        <line x1="0" :y1="getSavedZoneMeta(currentPlayer,'bat').cell*2" :x2="getSavedZoneMeta(currentPlayer,'bat').gridW" :y2="getSavedZoneMeta(currentPlayer,'bat').cell*2"/>
+                      </g>
+                    </g>
+
+                    <g>
+                      <g v-for="s in getSavedZoneShapes(currentPlayer,'bat')" :key="s.id">
+                        <rect v-if="s.type==='rect'" :x="(s.x - getSavedZoneMeta(currentPlayer,'bat').marginLeft)" :y="(s.y - getSavedZoneMeta(currentPlayer,'bat').marginTop)" :width="s.w" :height="s.h" :fill="s.color" :opacity="s.opacity" stroke="#333"></rect>
+                        <circle v-else-if="s.type==='circle'" :cx="(s.x - getSavedZoneMeta(currentPlayer,'bat').marginLeft) + s.r" :cy="(s.y - getSavedZoneMeta(currentPlayer,'bat').marginTop) + s.r" :r="s.r" :fill="s.color" :opacity="s.opacity" stroke="#333"></circle>
+                        <g v-else-if="s.type==='triangle'" :transform="`translate(${s.x - getSavedZoneMeta(currentPlayer,'bat').marginLeft},${s.y - getSavedZoneMeta(currentPlayer,'bat').marginTop}) rotate(${s.angle||0} ${s.cx||0} ${s.cy||0})`">
+                          <polygon :points="trianglePoints(s)" :fill="s.color" :opacity="s.opacity" stroke="#333"></polygon>
+                        </g>
+                        <line v-else-if="s.type==='line'" :x1="s.x - getSavedZoneMeta(currentPlayer,'bat').marginLeft" :y1="s.y - getSavedZoneMeta(currentPlayer,'bat').marginTop" :x2="s.x2 - getSavedZoneMeta(currentPlayer,'bat').marginLeft" :y2="s.y2 - getSavedZoneMeta(currentPlayer,'bat').marginTop" :stroke="s.color" stroke-width="2" :opacity="s.opacity"></line>
+                        <text v-if="s.label" :x="(s.x - getSavedZoneMeta(currentPlayer,'bat').marginLeft)" :y="(s.y - getSavedZoneMeta(currentPlayer,'bat').marginTop) - 8" font-size="12" fill="#fff" stroke="rgba(0,0,0,0.2)">{{ s.label }}</text>
+                      </g>
+                    </g>
+                  </svg>
+                  <div class="thumb-caption">打撃（保存図）</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="small-muted">図形はありません</div>
+          </div>
+
+        </div>
+        <div class="modal-footer p-3">
+          <button class="btn btn-secondary" @click="closePlayerModal()">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編集モーダル（簡易） -->
+    <div v-if="showEditModal" class="modal-backdrop-custom" @click="closeEditModal"></div>
+    <div v-if="showEditModal" class="modal-custom bg-white rounded">
+      <div class="p-3">
+        <div class="d-flex justify-content-between">
+          <h5>選手情報変更</h5>
+          <button class="btn btn-sm btn-secondary" @click="closeEditModal()">閉じる</button>
+        </div>
+        <hr>
+        <div class="row g-2">
+          <div class="col-md-6"><label class="form-label">姓</label><input v-model="editPlayer.nameFamily" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label">名</label><input v-model="editPlayer.nameGiven" class="form-control"></div>
+        </div>
+        <div class="text-end mt-3">
+          <button class="btn btn-primary" @click="saveEditedPlayer()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 成績モーダル（簡易） -->
+    <div v-if="showStatsModal" class="modal-backdrop-custom" @click="closeStatsModal"></div>
+    <div v-if="showStatsModal" class="modal-custom bg-white rounded">
+      <div class="p-3">
+        <div class="d-flex justify-content-between">
+          <h5>成績入力 {{ getFullName(currentPlayer) }}</h5>
+          <button class="btn btn-sm btn-secondary" @click="closeStatsModal()">閉じる</button>
+        </div>
+        <hr>
+        <div class="mb-2"><label class="form-label">試合日</label><input type="date" v-model="statForm.date" class="form-control"></div>
+        <div class="text-end mt-3"><button class="btn btn-primary" @click="saveStats()">保存</button></div>
+      </div>
+    </div>
+
+    <!-- トースト -->
+    <div v-if="toast.show" class="position-fixed bottom-0 end-0 p-3" style="z-index:2000">
+      <div class="toast show align-items-center text-bg-success border-0">
+        <div class="d-flex">
+          <div class="toast-body">{{ toast.msg }}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" @click="toast.show=false"></button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- バックアップ -->
-  <div class="text-end mb-5">
-    <button class="btn btn-outline-dark" @click="backupAllData">バックアップJSON出力</button>
-  </div>
-</div>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script>
+    const { createApp } = Vue;
 
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  deleteDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
-
-const { createApp } = Vue;
-
-createApp({
-  data() {
-    return {
-      players: [],
-      matches: [],
-      currentUser: null,
-      isAdmin: true,
-      loginForm: {
-        email: "",
-        password: ""
+    createApp({
+      data() {
+        const cell = 80;
+        const gridW = cell * 3;
+        const gridH = cell * 3;
+        const margin = cell;
+        const wrapperPadding = 20;
+        const svgWidth = 800;
+        const svgHeight = 560;
+        return {
+          tab: 'add',
+          lang: localStorage.getItem('lang') || 'ja',
+          schools: JSON.parse(localStorage.getItem('schools') || '[]'),
+          players: JSON.parse(localStorage.getItem('players') || '[]'),
+          matches: JSON.parse(localStorage.getItem('matches') || '[]'),
+          templates: JSON.parse(localStorage.getItem('templates') || '[]'),
+          templateName: '',
+          newPlayer: { id:null, nameFamily:'', nameMiddle:'', nameGiven:'', furiganaFamily:'', furiganaMiddle:'', furiganaGiven:'', number:null, pitchHand:'R', batHand:'R', positions:[], teamType:'ICU', school:'', memo:'', videoFile:null, videoUrl:null, stats:[], zoneShapesPitch:[], zoneShapesBat:[] },
+          positions: ['投手','捕手','一塁手','二塁手','三塁手','遊撃手','左翼手','中堅手','右翼手','指名打者'],
+          selectedPos: '投手',
+          selectedPosEdit: '投手',
+          search: { qFamily:'', qTeam:'' },
+          searchResults: [],
+          newMatch: { id:null, date:'', imageFile:null, imageUrl:null },
+          showPlayerModal: false,
+          currentPlayer: null,
+          showEditModal: false,
+          editPlayer: null,
+          showStatsModal: false,
+          statForm: { date:'', matchup:'', batter:{atBats:0,hits:0,totalBases:0,stealAttempts:0,steals:0}, pitcher:{inningsWhole:0,inningsThirds:0,hitsAllowed:0,walksHbp:0} },
+          toast: { show:false, msg:'' },
+          settings: { scheduleUrl: (JSON.parse(localStorage.getItem('settings')||'{}')).scheduleUrl || '' },
+          newSchool: '',
+          svgWidth,
+          svgHeight,
+          zoneShapesPitch: JSON.parse(localStorage.getItem('zoneShapesPitch') || '[]'),
+          zoneShapesBat: JSON.parse(localStorage.getItem('zoneShapesBat') || '[]'),
+          selectedIds: [],
+          selectedCanvas: null,
+          dragging: false,
+          dragOffset: {x:0,y:0},
+          resizing: false,
+          resizeTarget: null,
+          zoneTool: { color:'#ff0000', opacity:0.6 },
+          multiColor: '#ff0000',
+          multiOpacity: 0.6,
+          multiLabel: '',
+          labelOptions: ['ストレート','カーブ','スライダー','フォーク','チェンジアップ','シュート','カットボール'],
+          activeCanvas: 'pitch',
+          pitchScale:1, pitchPan:{x:0,y:0}, pitchTouchState:null,
+          batScale:1, batPan:{x:0,y:0}, batTouchState:null,
+          editor: { cell, gridW, gridH, marginLeft: margin + wrapperPadding, marginTop: margin + wrapperPadding, marginBottom: margin + wrapperPadding, margin, wrapperPadding }
+        };
       },
-      newPlayer: {
-        nameFamily: "",
-        nameGiven: "",
-        number: null,
-        pitchHand: "R",
-        memo: "",
-        videoFile: null,
-        videoUrl: ""
+      computed: {
+        uniqueTeams() {
+          const set = new Set();
+          this.players.forEach(p => {
+            const team = (p.teamType === 'OTHER' ? p.school : p.teamType) || '';
+            if (team) set.add(team);
+          });
+          return Array.from(set);
+        },
+        multiSelectedCount() { return this.selectedIds.length; },
+        isSingleSelection() { return this.selectedIds.length === 1; },
+        selectedShape() {
+          if (!this.isSingleSelection || !this.selectedCanvas) return null;
+          const arr = this.selectedCanvas === 'pitch' ? this.zoneShapesPitch : this.zoneShapesBat;
+          return arr.find(z => z.id === this.selectedIds[0]) || null;
+        },
+        pitchTransform() { return `translate(${this.pitchPan.x},${this.pitchPan.y}) scale(${this.pitchScale})`; },
+        batTransform() { return `translate(${this.batPan.x},${this.batPan.y}) scale(${this.batScale})`; }
       },
-      newMatch: {
-        date: "",
-        imageFile: null,
-        imageUrl: ""
+      mounted() {
+        this.searchResults = this.players.slice();
+        if (!Array.isArray(this.zoneShapesPitch)) this.zoneShapesPitch = [];
+        if (!Array.isArray(this.zoneShapesBat)) this.zoneShapesBat = [];
+      },
+      methods: {
+        applyLang(){ localStorage.setItem('lang', this.lang); },
+        onVideoSelected(e){ const f=e.target.files[0]; if(!f) return; this.newPlayer.videoFile=f; this.newPlayer.videoUrl=URL.createObjectURL(f); },
+        addPosition(){ if(!this.selectedPos) return; if(!this.newPlayer.positions) this.newPlayer.positions=[]; if(!this.newPlayer.positions.includes(this.selectedPos)) this.newPlayer.positions.push(this.selectedPos); },
+        removePosition(i){ this.newPlayer.positions.splice(i,1); },
+        addPlayer(){
+          if(!this.newPlayer.nameFamily && !this.newPlayer.nameGiven){ alert('名前を入力してください'); return; }
+          const id='p_'+Date.now();
+          const p=JSON.parse(JSON.stringify(this.newPlayer)); p.id=id; p.name=[p.nameFamily,p.nameMiddle,p.nameGiven].filter(Boolean).join(' '); p.furigana=[p.furiganaFamily,p.furiganaMiddle,p.furiganaGiven].filter(Boolean).join(' ');
+          p.zoneSavedPitch={shapes:JSON.parse(JSON.stringify(this.zoneShapesPitch)), meta:this._editorMetaSnapshot()};
+          p.zoneSavedBat={shapes:JSON.parse(JSON.stringify(this.zoneShapesBat)), meta:this._editorMetaSnapshot()};
+          p.zoneShapesPitch=JSON.parse(JSON.stringify(this.zoneShapesPitch)); p.zoneShapesBat=JSON.parse(JSON.stringify(this.zoneShapesBat));
+          this.players.push(p); localStorage.setItem('players', JSON.stringify(this.players));
+          this.newPlayer={ id:null, nameFamily:'', nameMiddle:'', nameGiven:'', furiganaFamily:'', furiganaMiddle:'', furiganaGiven:'', number:null, pitchHand:'R', batHand:'R', positions:[], teamType:'ICU', school:'', memo:'', videoFile:null, videoUrl:null, stats:[], zoneShapesPitch:[], zoneShapesBat:[] };
+          this.zoneShapesPitch=[]; this.zoneShapesBat=[];
+          this.clearSelection();
+          this.toastMessage('追加されました');
+          this.searchResults=this.players.slice();
+        },
+        doSearch(){ const qf=(this.search.qFamily||'').toLowerCase(); const qt=(this.search.qTeam||'').toLowerCase(); this.searchResults=this.players.filter(p=>{ if(qf && !((p.nameFamily||'').toLowerCase().includes(qf) || (p.name||'').toLowerCase().includes(qf))) return false; if(qt && !((p.teamType==='OTHER'?p.school:p.teamType||'').toLowerCase().includes(qt))) return false; return true; }); },
+        selectTeam(team){ this.searchResults=this.players.filter(p=> (p.teamType==='OTHER'?p.school:p.teamType)===team); },
+        viewPlayer(p){ this.currentPlayer=Object.assign({},p); if(!this.currentPlayer.zoneSavedPitch) this.currentPlayer.zoneSavedPitch={shapes:JSON.parse(JSON.stringify(p.zoneShapesPitch||[])), meta:this._editorMetaSnapshot()}; if(!this.currentPlayer.zoneSavedBat) this.currentPlayer.zoneSavedBat={shapes:JSON.parse(JSON.stringify(p.zoneShapesBat||[])), meta:this._editorMetaSnapshot()}; this.showPlayerModal=true; },
+        closePlayerModal(){ this.showPlayerModal=false; this.currentPlayer=null; },
+        confirmDeletePlayer(player){ if(!confirm('削除しますか？')) return; this.deletePlayer(player); },
+        deletePlayer(player){ this.players=this.players.filter(p=>p.id!==player.id); localStorage.setItem('players', JSON.stringify(this.players)); this.searchResults=this.searchResults.filter(p=>p.id!==player.id); if(this.currentPlayer && this.currentPlayer.id===player.id) this.closePlayerModal(); this.toastMessage('削除しました'); },
+        openEditPlayerModal(p){ this.editPlayer=JSON.parse(JSON.stringify(p)); this.editPlayer.videoFile=null; if(p.zoneSavedPitch && p.zoneSavedPitch.shapes) this.zoneShapesPitch=JSON.parse(JSON.stringify(p.zoneSavedPitch.shapes)); else this.zoneShapesPitch=JSON.parse(JSON.stringify(p.zoneShapesPitch||[])); if(p.zoneSavedBat && p.zoneSavedBat.shapes) this.zoneShapesBat=JSON.parse(JSON.stringify(p.zoneSavedBat.shapes)); else this.zoneShapesBat=JSON.parse(JSON.stringify(p.zoneShapesBat||[])); this.clearSelection(); this.showEditModal=true; },
+        closeEditModal(){ this.showEditModal=false; this.editPlayer=null; },
+        saveEditedPlayer(){ if(!this.editPlayer) return; const idx=this.players.findIndex(p=>p.id===this.editPlayer.id); if(idx===-1) return; const updated=JSON.parse(JSON.stringify(this.editPlayer)); updated.name=[updated.nameFamily,updated.nameMiddle,updated.nameGiven].filter(Boolean).join(' '); updated.furigana=[updated.furiganaFamily,updated.furiganaMiddle,updated.furiganaGiven].filter(Boolean).join(' '); updated.zoneSavedPitch={shapes:JSON.parse(JSON.stringify(this.zoneShapesPitch||[])), meta:this._editorMetaSnapshot()}; updated.zoneSavedBat={shapes:JSON.parse(JSON.stringify(this.zoneShapesBat||[])), meta:this._editorMetaSnapshot()}; updated.zoneShapesPitch=JSON.parse(JSON.stringify(this.zoneShapesPitch||[])); updated.zoneShapesBat=JSON.parse(JSON.stringify(this.zoneShapesBat||[])); updated.stats=this.players[idx].stats||updated.stats||[]; this.players.splice(idx,1,updated); localStorage.setItem('players', JSON.stringify(this.players)); this.searchResults=this.players.slice(); this.toastMessage('保存しました'); this.closeEditModal(); },
+        onScoreImageSelected(e){ const f=e.target.files[0]; if(!f) return; this.newMatch.imageFile=f; this.newMatch.imageUrl=URL.createObjectURL(f); },
+        addMatch(){ const m=JSON.parse(JSON.stringify(this.newMatch)); m.id='m_'+Date.now(); this.matches.push(m); localStorage.setItem('matches', JSON.stringify(this.matches)); this.newMatch={id:null,date:'',imageFile:null,imageUrl:null}; this.toastMessage('保存しました'); },
+        addSchool(){ const s=(this.newSchool||'').trim(); if(!s) return; if(!this.schools.includes(s)){ this.schools.push(s); localStorage.setItem('schools', JSON.stringify(this.schools)); this.newSchool=''; this.toastMessage('追加しました'); } },
+        removeSchool(s){ this.schools=this.schools.filter(x=>x!==s); localStorage.setItem('schools', JSON.stringify(this.schools)); },
+        openStatsModal(){ this.statForm={date:'',matchup:'',batter:{atBats:0,hits:0,totalBases:0,stealAttempts:0,steals:0},pitcher:{inningsWhole:0,inningsThirds:0,hitsAllowed:0,walksHbp:0}}; this.showStatsModal=true; },
+        closeStatsModal(){ this.showStatsModal=false; },
+        saveStats(){ if(!this.currentPlayer) return; const stat=JSON.parse(JSON.stringify(this.statForm)); stat.id='s_'+Date.now(); stat.pitcher.innings = stat.pitcher.inningsWhole + (stat.pitcher.inningsThirds===1 ? ' +1/3' : stat.pitcher.inningsThirds===2 ? ' +2/3' : ''); this.currentPlayer.stats=this.currentPlayer.stats||[]; this.currentPlayer.stats.push(stat); const idx=this.players.findIndex(x=>x.id===this.currentPlayer.id); if(idx!==-1){ this.players.splice(idx,1,this.currentPlayer); localStorage.setItem('players', JSON.stringify(this.players)); } this.toastMessage('保存しました'); this.showStatsModal=false; },
+
+        /* 図形編集ロジック */
+        getGridCenter(){ const gridOffsetX=this.editor.marginLeft+20; const gridOffsetY=this.editor.marginTop+20; return { x: gridOffsetX + this.editor.gridW/2, y: gridOffsetY + this.editor.gridH/2 }; },
+        zoneAdd(type, canvas){ const id='z_'+Date.now(); const center=this.getGridCenter(); const base={id,type,color:this.zoneTool.color,opacity:this.zoneTool.opacity,angle:0,label:''}; let s; if(type==='rect'){ const w=80,h=50; s=Object.assign({},base,{x:center.x-w/2,y:center.y-h/2,w,h,cx:w/2,cy:h/2}); } else if(type==='circle'){ const r=16; s=Object.assign({},base,{x:center.x-r,y:center.y-r,r,cx:r,cy:r}); } else if(type==='triangle'){ const w=80,h=60; s=Object.assign({},base,{x:center.x-w/2,y:center.y-h/2,w,h,cx:w/2,cy:h/2}); } else if(type==='line'){ const len=120; s=Object.assign({},base,{x:center.x-len/2,y:center.y-1,x2:center.x+len/2,y2:center.y+1}); } if(canvas==='bat') this.zoneShapesBat.push(JSON.parse(JSON.stringify(s))); else this.zoneShapesPitch.push(JSON.parse(JSON.stringify(s))); this.clearSelection(); this.selectedCanvas=canvas; this.selectedIds=[s.id]; this.persistShapes(); },
+        trianglePoints(s){ return `0,${s.h} ${s.w/2},0 ${s.w},${s.h}`; },
+        isSelected(s){ return this.selectedIds.includes(s.id); },
+        shapeMouseDown(e, canvas, s){ e.stopPropagation(); if(e.shiftKey){ if(this.selectedCanvas && this.selectedCanvas!==canvas){ this.selectedIds=[s.id]; this.selectedCanvas=canvas; } else { if(this.selectedIds.includes(s.id)) this.selectedIds=this.selectedIds.filter(id=>id!==s.id); else this.selectedIds.push(s.id); this.selectedCanvas=canvas; } } else { this.selectedIds=[s.id]; this.selectedCanvas=canvas; } const svgRef = canvas==='pitch'?this.$refs.svgPitch:this.$refs.svgBat; const rect=svgRef.getBoundingClientRect(); const x=e.clientX-rect.left; const y=e.clientY-rect.top; this.dragging=true; this.dragOffset.x = x - s.x; this.dragOffset.y = y - s.y; },
+        shapeTouchStart(e, canvas, s){ if(e.touches && e.touches.length===1){ const t=e.touches[0]; if(!this.selectedIds.includes(s.id) || this.selectedCanvas!==canvas){ this.selectedIds=[s.id]; this.selectedCanvas=canvas; } const svgRef = canvas==='pitch'?this.$refs.svgPitch:this.$refs.svgBat; const rect=svgRef.getBoundingClientRect(); const x=t.clientX-rect.left; const y=t.clientY-rect.top; this.dragging=true; this.dragOffset.x = x - s.x; this.dragOffset.y = y - s.y; } else if(e.touches && e.touches.length>1){ this.onTouchStart(e, canvas); } },
+        onSvgMouseDown(e, canvas){ if(!e.shiftKey) this.clearSelection(); },
+        onSvgMouseMove(e, canvas){ if(!this.dragging && !this.resizing) return; const svgRef = canvas==='pitch'?this.$refs.svgPitch:this.$refs.svgBat; if(!svgRef) return; const rect=svgRef.getBoundingClientRect(); const x=e.clientX-rect.left; const y=e.clientY-rect.top; if(this.dragging && this.selectedIds.length>0 && this.selectedCanvas===canvas){ const arr = canvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; const first = arr.find(z=>z.id===this.selectedIds[0]); if(!first) return; const nx = x - this.dragOffset.x; const ny = y - this.dragOffset.y; const dx = nx - first.x; const dy = ny - first.y; this.selectedIds.forEach(id=>{ const s = arr.find(z=>z.id===id); if(!s) return; s.x += dx; s.y += dy; if(s.type==='line'){ s.x2 += dx; s.y2 += dy; } }); this.dragOffset.x = x - first.x; this.dragOffset.y = y - first.y; this.persistShapes(); } else if(this.resizing && this.resizeTarget && this.resizeTarget.canvas===canvas){ const s=this.resizeTarget.shape; const nx = e.clientX - svgRef.getBoundingClientRect().left; const ny = e.clientY - svgRef.getBoundingClientRect().top; let newW = nx - s.x; let newH = ny - s.y; newW = Math.max(8, newW); newH = Math.max(8, newH); s.w = newW; s.h = newH; s.cx = s.w/2; s.cy = s.h/2; this.persistShapes(); } },
+        onSvgMouseUp(canvas){ this.dragging=false; this.resizing=false; this.resizeTarget=null; },
+        startResize(e, canvas, s){ this.resizing=true; this.resizeTarget={shape:s,canvas}; },
+        updateShapeProps(){ if(!this.selectedCanvas) return; if(this.isSingleSelection){ const arr = this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; const idx = arr.findIndex(z=>z.id===this.selectedIds[0]); if(idx!==-1) arr.splice(idx,1,JSON.parse(JSON.stringify(this.selectedShape))); this.persistShapes(); } },
+        applyMultiColor(){ if(!this.selectedCanvas) return; const arr=this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; this.selectedIds.forEach(id=>{ const s=arr.find(z=>z.id===id); if(s) s.color=this.multiColor; }); this.persistShapes(); },
+        applyMultiOpacity(){ if(!this.selectedCanvas) return; const arr=this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; this.selectedIds.forEach(id=>{ const s=arr.find(z=>z.id===id); if(s) s.opacity=this.multiOpacity; }); this.persistShapes(); },
+        applyMultiLabel(){ if(!this.selectedCanvas) return; const arr=this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; this.selectedIds.forEach(id=>{ const s=arr.find(z=>z.id===id); if(s) s.label=this.multiLabel; }); this.persistShapes(); },
+        deleteSelectedShapes(){ if(!this.selectedCanvas) return; if(!confirm('削除しますか？')) return; if(this.selectedCanvas==='pitch') this.zoneShapesPitch=this.zoneShapesPitch.filter(z=>!this.selectedIds.includes(z.id)); else this.zoneShapesBat=this.zoneShapesBat.filter(z=>!this.selectedIds.includes(z.id)); this.clearSelection(); this.persistShapes(); },
+        clearSelection(){ this.selectedIds=[]; this.selectedCanvas=null; this.multiColor=this.zoneTool.color; this.multiOpacity=this.zoneTool.opacity; this.multiLabel=''; },
+        bringForward(){ if(!this.selectedCanvas || this.selectedIds.length===0) return; const arr=this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; this.selectedIds.forEach(id=>{ const idx=arr.findIndex(z=>z.id===id); if(idx!==-1){ const [it]=arr.splice(idx,1); arr.push(it); } }); this.persistShapes(); },
+        sendBackward(){ if(!this.selectedCanvas || this.selectedIds.length===0) return; const arr=this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; this.selectedIds.forEach(id=>{ const idx=arr.findIndex(z=>z.id===id); if(idx!==-1){ const [it]=arr.splice(idx,1); arr.unshift(it); } }); this.persistShapes(); },
+        saveTemplate(){ if(!this.templateName || this.selectedIds.length===0 || !this.selectedCanvas){ alert('テンプレート名と選択図形を指定してください'); return; } const arr=this.selectedCanvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; const shapes=arr.filter(z=>this.selectedIds.includes(z.id)).map(z=>JSON.parse(JSON.stringify(z))); const tpl={id:'tpl_'+Date.now(),name:this.templateName,shapes}; this.templates.push(tpl); localStorage.setItem('templates', JSON.stringify(this.templates)); this.templateName=''; this.toastMessage('テンプレート保存'); },
+        saveAllAsTemplate(){ if(!this.templateName){ alert('テンプレート名を入力してください'); return; } const shapes=JSON.parse(JSON.stringify(this.zoneShapesPitch.concat(this.zoneShapesBat))); const tpl={id:'tpl_'+Date.now(),name:this.templateName,shapes}; this.templates.push(tpl); localStorage.setItem('templates', JSON.stringify(this.templates)); this.templateName=''; this.toastMessage('テンプレート保存'); },
+        applyTemplateToCanvas(tpl, canvas){ if(!tpl||!canvas) return; const arr=canvas==='pitch'?this.zoneShapesPitch:this.zoneShapesBat; const clones=tpl.shapes.map(s=>{ const c=JSON.parse(JSON.stringify(s)); c.id='z_'+Date.now()+'_'+Math.floor(Math.random()*1000); c.x+=10; c.y+=10; return c; }); arr.push(...clones); this.persistShapes(); this.toastMessage('テンプレート適用'); },
+        applyTemplateToPlayer(tpl){ if(!tpl) return; const targetPlayer=this.editPlayer||this.newPlayer; if(!targetPlayer){ alert('選手が選択されていません'); return; } const pitchShapes=[], batShapes=[]; tpl.shapes.forEach(s=>{ const clone=JSON.parse(JSON.stringify(s)); clone.id='z_'+Date.now()+'_'+Math.floor(Math.random()*1000); if((clone.y||0) < (this.editor.marginTop + this.editor.gridH/2)) pitchShapes.push(clone); else batShapes.push(clone); }); const meta=this._editorMetaSnapshot(); targetPlayer.zoneSavedPitch=targetPlayer.zoneSavedPitch||{shapes:[],meta}; targetPlayer.zoneSavedBat=targetPlayer.zoneSavedBat||{shapes:[],meta}; targetPlayer.zoneSavedPitch.shapes=(targetPlayer.zoneSavedPitch.shapes||[]).concat(pitchShapes); targetPlayer.zoneSavedBat.shapes=(targetPlayer.zoneSavedBat.shapes||[]).concat(batShapes); targetPlayer.zoneShapesPitch=(targetPlayer.zoneShapesPitch||[]).concat(pitchShapes); targetPlayer.zoneShapesBat=(targetPlayer.zoneShapesBat||[]).concat(batShapes); if(this.editPlayer){ const idx=this.players.findIndex(p=>p.id===this.editPlayer.id); if(idx!==-1){ this.players.splice(idx,1,JSON.parse(JSON.stringify(this.editPlayer))); localStorage.setItem('players', JSON.stringify(this.players)); } } this.toastMessage('テンプレートを選手に適用しました'); },
+        removeTemplate(id){ this.templates=this.templates.filter(t=>t.id!==id); localStorage.setItem('templates', JSON.stringify(this.templates)); },
+        clearCanvas(canvas){ if(!confirm('本当に削除しますか？')) return; if(canvas==='pitch') this.zoneShapesPitch=[]; else this.zoneShapesBat=[]; this.clearSelection(); this.persistShapes(); },
+        persistShapes(){ localStorage.setItem('zoneShapesPitch', JSON.stringify(this.zoneShapesPitch)); localStorage.setItem('zoneShapesBat', JSON.stringify(this.zoneShapesBat)); },
+
+        /* touch pan/pinch */
+        onTouchStart(e, canvas){ const stateKey = canvas==='pitch'?'pitchTouchState':'batTouchState'; const scaleKey = canvas==='pitch'?'pitchScale':'batScale'; const panKey = canvas==='pitch'?'pitchPan':'batPan'; const svgRef = canvas==='pitch'?this.$refs.svgPitch:this.$refs.svgBat; if(!svgRef) return; const rect=svgRef.getBoundingClientRect(); if(e.touches.length===1){ this[stateKey]={mode:'single',startX:e.touches[0].clientX-rect.left,startY:e.touches[0].clientY-rect.top,origPan:{...this[panKey]}}; } else if(e.touches.length===2){ const t0=e.touches[0], t1=e.touches[1]; const dx=t1.clientX-t0.clientX, dy=t1.clientY-t0.clientY; const dist=Math.hypot(dx,dy); const midX=(t0.clientX+t1.clientX)/2-rect.left; const midY=(t0.clientY+t1.clientY)/2-rect.top; this[stateKey]={mode:'pinch',startDist:dist,startScale:this[scaleKey],midX,midY,origPan:{...this[panKey]}}; } },
+        onTouchMove(e, canvas){ const stateKey = canvas==='pitch'?'pitchTouchState':'batTouchState'; const scaleKey = canvas==='pitch'?'pitchScale':'batScale'; const panKey = canvas==='pitch'?'pitchPan':'batPan'; const svgRef = canvas==='pitch'?this.$refs.svgPitch:this.$refs.svgBat; if(!svgRef) return; const rect=svgRef.getBoundingClientRect(); const st=this[stateKey]; if(!st) return; if(st.mode==='pinch' && e.touches.length===2){ const t0=e.touches[0], t1=e.touches[1]; const dx=t1.clientX-t0.clientX, dy=t1.clientY-t0.clientY; const dist=Math.hypot(dx,dy); const newScale=Math.max(0.3, Math.min(4, st.startScale*(dist/st.startDist))); const midX=(t0.clientX+t1.clientX)/2-rect.left; const midY=(t0.clientY+t1.clientY)/2-rect.top; const ratio=newScale/st.startScale; const origPan=st.origPan; const newPanX = origPan.x + (midX - origPan.x) - (midX - origPan.x)*ratio; const newPanY = origPan.y + (midY - origPan.y) - (midY - origPan.y)*ratio; this[scaleKey]=newScale; this[panKey].x=newPanX; this[panKey].y=newPanY; } else if(st.mode==='single' && e.touches.length===1){ const t=e.touches[0]; const x=t.clientX-rect.left; const y=t.clientY-rect.top; const dx=x-st.startX; const dy=y-st.startY; this[panKey].x=st.origPan.x+dx; this[panKey].y=st.origPan.y+dy; } },
+        onTouchEnd(e, canvas){ const stateKey = canvas==='pitch'?'pitchTouchState':'batTouchState'; this[stateKey]=null; },
+
+        _editorMetaSnapshot(){ return { cell:this.editor.cell, gridW:this.editor.gridW, gridH:this.editor.gridH, margin:this.editor.margin, wrapperPadding:this.editor.wrapperPadding, marginLeft:this.editor.marginLeft, marginTop:this.editor.marginTop }; },
+
+        saveZoneToPlayer(target){ const targetPlayer=this.editPlayer||this.newPlayer; if(!targetPlayer){ this.toastMessage('選手が選択されていません'); return; } const meta=this._editorMetaSnapshot(); if(target==='pitch'){ const shapes=JSON.parse(JSON.stringify(this.zoneShapesPitch||[])); targetPlayer.zoneSavedPitch={shapes,meta}; targetPlayer.zoneShapesPitch=JSON.parse(JSON.stringify(shapes)); this.toastMessage('投球図形を保存しました'); } else { const shapes=JSON.parse(JSON.stringify(this.zoneShapesBat||[])); targetPlayer.zoneSavedBat={shapes,meta}; targetPlayer.zoneShapesBat=JSON.parse(JSON.stringify(shapes)); this.toastMessage('打撃図形を保存しました'); } if(this.editPlayer){ const idx=this.players.findIndex(p=>p.id===this.editPlayer.id); if(idx!==-1){ const stored=JSON.parse(JSON.stringify(this.players[idx])); if(target==='pitch'){ stored.zoneSavedPitch=targetPlayer.zoneSavedPitch; stored.zoneShapesPitch=targetPlayer.zoneShapesPitch; } else { stored.zoneSavedBat=targetPlayer.zoneSavedBat; stored.zoneShapesBat=targetPlayer.zoneShapesBat; } this.players.splice(idx,1,stored); localStorage.setItem('players', JSON.stringify(this.players)); } } },
+        loadZoneFromPlayer(target){ const sourcePlayer=this.editPlayer||this.newPlayer; if(!sourcePlayer){ this.toastMessage('選手が選択されていません'); return; } if(target==='pitch'){ if(sourcePlayer.zoneSavedPitch && sourcePlayer.zoneSavedPitch.shapes) this.zoneShapesPitch=JSON.parse(JSON.stringify(sourcePlayer.zoneSavedPitch.shapes)); else this.zoneShapesPitch=JSON.parse(JSON.stringify(sourcePlayer.zoneShapesPitch||[])); this.toastMessage('投球図形を読み込みました'); } else { if(sourcePlayer.zoneSavedBat && sourcePlayer.zoneSavedBat.shapes) this.zoneShapesBat=JSON.parse(JSON.stringify(sourcePlayer.zoneSavedBat.shapes)); else this.zoneShapesBat=JSON.parse(JSON.stringify(sourcePlayer.zoneShapesBat||[])); this.toastMessage('打撃図形を読み込みました'); } this.clearSelection(); this.persistShapes(); },
+
+        /* export */
+        svgToPngAndDownload(svgString, fileName, canvasScale = 1) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            img.onload = () => {
+              try {
+                const w = img.width * canvasScale;
+                const h = img.height * canvasScale;
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                URL.revokeObjectURL(url);
+                canvas.toBlob(blob => {
+                  const a = document.createElement('a');
+                  a.href = URL.createObjectURL(blob);
+                  a.download = fileName;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  resolve();
+                }, 'image/png');
+              } catch (err) {
+                reject(err);
+              }
+            };
+            img.onerror = (e) => {
+              URL.revokeObjectURL(url);
+              reject(new Error('SVG -> Image load failed'));
+            };
+            img.src = url;
+          });
+        },
+
+        async exportZoneImage(canvas) {
+          try {
+            const shapes = (canvas === 'pitch') ? this.zoneShapesPitch : this.zoneShapesBat;
+            const cell = this.editor.cell;
+            const gridW = this.editor.gridW;
+            const gridH = this.editor.gridH;
+            const margin = this.editor.margin;
+            const wrapperPadding = this.editor.wrapperPadding;
+            const innerLeft = wrapperPadding;
+            const innerTop = wrapperPadding;
+            const baseW = innerLeft + gridW + innerLeft;
+            const baseH = innerTop + gridH + innerTop;
+            const totalW = baseW + margin * 2;
+            const totalH = baseH + margin * 2;
+            const xmlns = "http://www.w3.org/2000/svg";
+            const outSvg = document.createElementNS(xmlns, 'svg');
+            outSvg.setAttribute('xmlns', xmlns);
+            outSvg.setAttribute('width', totalW);
+            outSvg.setAttribute('height', totalH);
+            outSvg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+            const bg = document.createElementNS(xmlns, 'rect');
+            bg.setAttribute('x', 0); bg.setAttribute('y', 0); bg.setAttribute('width', totalW); bg.setAttribute('height', totalH); bg.setAttribute('fill', '#ffffff');
+            outSvg.appendChild(bg);
+            const wrapper = document.createElementNS(xmlns, 'g');
+            wrapper.setAttribute('transform', `translate(${margin + wrapperPadding}, ${margin + wrapperPadding})`);
+            const gridGroup = document.createElementNS(xmlns, 'g');
+            gridGroup.setAttribute('transform', `translate(0,0)`);
+            const rect = document.createElementNS(xmlns, 'rect');
+            rect.setAttribute('x', 0); rect.setAttribute('y', 0); rect.setAttribute('width', gridW); rect.setAttribute('height', gridH); rect.setAttribute('fill', 'none'); rect.setAttribute('stroke', '#333');
+            gridGroup.appendChild(rect);
+            const lines = document.createElementNS(xmlns, 'g'); lines.setAttribute('stroke', '#999');
+            const l1 = document.createElementNS(xmlns, 'line'); l1.setAttribute('x1', String(cell)); l1.setAttribute('y1', '0'); l1.setAttribute('x2', String(cell)); l1.setAttribute('y2', String(gridH));
+            const l2 = document.createElementNS(xmlns, 'line'); l2.setAttribute('x1', String(cell*2)); l2.setAttribute('y1', '0'); l2.setAttribute('x2', String(cell*2)); l2.setAttribute('y2', String(gridH));
+            const l3 = document.createElementNS(xmlns, 'line'); l3.setAttribute('x1', '0'); l3.setAttribute('y1', String(cell)); l3.setAttribute('x2', String(gridW)); l3.setAttribute('y2', String(cell));
+            const l4 = document.createElementNS(xmlns, 'line'); l4.setAttribute('x1', '0'); l4.setAttribute('y1', String(cell*2)); l4.setAttribute('x2', String(gridW)); l4.setAttribute('y2', String(cell*2));
+            lines.appendChild(l1); lines.appendChild(l2); lines.appendChild(l3); lines.appendChild(l4);
+            gridGroup.appendChild(lines);
+            wrapper.appendChild(gridGroup);
+            const offsetX = this.editor.marginLeft;
+            const offsetY = this.editor.marginTop;
+            shapes.forEach(s => {
+              if (s.type === 'rect') {
+                const el = document.createElementNS(xmlns, 'rect');
+                el.setAttribute('x', String(s.x - offsetX));
+                el.setAttribute('y', String(s.y - offsetY));
+                el.setAttribute('width', String(s.w));
+                el.setAttribute('height', String(s.h));
+                el.setAttribute('fill', s.color || '#f00');
+                el.setAttribute('opacity', s.opacity == null ? 1 : s.opacity);
+                el.setAttribute('stroke', '#333');
+                wrapper.appendChild(el);
+              } else if (s.type === 'circle') {
+                const el = document.createElementNS(xmlns, 'circle');
+                const cx = s.x - offsetX + (s.r || 12);
+                const cy = s.y - offsetY + (s.r || 12);
+                el.setAttribute('cx', String(cx));
+                el.setAttribute('cy', String(cy));
+                el.setAttribute('r', String(s.r || 12));
+                el.setAttribute('fill', s.color || '#f00');
+                el.setAttribute('opacity', s.opacity == null ? 1 : s.opacity);
+                el.setAttribute('stroke', '#333');
+                wrapper.appendChild(el);
+              } else if (s.type === 'triangle') {
+                const g = document.createElementNS(xmlns, 'g');
+                g.setAttribute('transform', `translate(${s.x - offsetX},${s.y - offsetY}) rotate(${s.angle||0} ${s.cx||0} ${s.cy||0})`);
+                const poly = document.createElementNS(xmlns, 'polygon');
+                const points = `${0},${s.h} ${s.w/2},0 ${s.w},${s.h}`;
+                poly.setAttribute('points', points);
+                poly.setAttribute('fill', s.color || '#f00');
+                poly.setAttribute('opacity', s.opacity == null ? 1 : s.opacity);
+                poly.setAttribute('stroke', '#333');
+                g.appendChild(poly);
+                wrapper.appendChild(g);
+              } else if (s.type === 'line') {
+                const el = document.createElementNS(xmlns, 'line');
+                el.setAttribute('x1', String(s.x - offsetX)); el.setAttribute('y1', String(s.y - offsetY));
+                el.setAttribute('x2', String(s.x2 - offsetX)); el.setAttribute('y2', String(s.y2 - offsetY));
+                el.setAttribute('stroke', s.color || '#000'); el.setAttribute('stroke-width', '2'); el.setAttribute('opacity', s.opacity == null ? 1 : s.opacity);
+                wrapper.appendChild(el);
+              }
+              if (s.label) {
+                const t = document.createElementNS(xmlns, 'text');
+                t.setAttribute('x', String(s.x - offsetX));
+                t.setAttribute('y', String(s.y - offsetY - 8));
+                t.setAttribute('font-size', '12');
+                t.setAttribute('fill', '#fff');
+                t.setAttribute('stroke', 'rgba(0,0,0,0.2)');
+                t.textContent = s.label;
+                wrapper.appendChild(t);
+              }
+            });
+            outSvg.appendChild(wrapper);
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(outSvg);
+            const scale = 2;
+            await this.svgToPngAndDownload(svgString, `${canvas}_zone_with_margin.png`, scale);
+            this.toastMessage('画像を保存しました');
+          } catch (err) {
+            console.error(err);
+            alert('画像保存に失敗しました: ' + (err && err.message ? err.message : err));
+          }
+        },
+
+        hasSavedZone(player, canvas){ if(!player) return false; if(canvas==='pitch') return !!(player.zoneSavedPitch && Array.isArray(player.zoneSavedPitch.shapes) && player.zoneSavedPitch.shapes.length>0); return !!(player.zoneSavedBat && Array.isArray(player.zoneSavedBat.shapes) && player.zoneSavedBat.shapes.length>0); },
+        getSavedZoneShapes(player, canvas){ if(!player) return []; if(canvas==='pitch'){ if(player.zoneSavedPitch && Array.isArray(player.zoneSavedPitch.shapes)) return player.zoneSavedPitch.shapes; return player.zoneShapesPitch||[]; } else { if(player.zoneSavedBat && Array.isArray(player.zoneSavedBat.shapes)) return player.zoneSavedBat.shapes; return player.zoneShapesBat||[]; } },
+        getSavedZoneMeta(player, canvas){ if(!player) return this._editorMetaSnapshot(); if(canvas==='pitch'){ if(player.zoneSavedPitch && player.zoneSavedPitch.meta) return player.zoneSavedPitch.meta; if(player.zoneSavedBat && player.zoneSavedBat.meta) return player.zoneSavedBat.meta; return this._editorMetaSnapshot(); } else { if(player.zoneSavedBat && player.zoneSavedBat.meta) return player.zoneSavedBat.meta; if(player.zoneSavedPitch && player.zoneSavedPitch.meta) return player.zoneSavedPitch.meta; return this._editorMetaSnapshot(); } },
+        thumbViewBox(meta){ if(!meta) meta=this._editorMetaSnapshot(); const totalW = meta.margin + meta.wrapperPadding + meta.gridW + meta.wrapperPadding + meta.margin; const totalH = meta.margin + meta.wrapperPadding + meta.gridH + meta.wrapperPadding + meta.margin; return `0 0 ${totalW} ${totalH}`; },
+        thumbSizeW(meta){ if(!meta) meta=this._editorMetaSnapshot(); return meta.margin + meta.wrapperPadding + meta.gridW + meta.wrapperPadding + meta.margin; },
+        thumbSizeH(meta){ if(!meta) meta=this._editorMetaSnapshot(); return meta.margin + meta.wrapperPadding + meta.gridH + meta.wrapperPadding + meta.margin; },
+
+        getFullName(p){ if(!p) return ''; if(p.nameFamily||p.nameMiddle||p.nameGiven) return [p.nameFamily,p.nameMiddle,p.nameGiven].filter(Boolean).join(' '); if(p.name) return p.name; return ''; },
+        getFullFurigana(p){ if(!p) return ''; if(p.furiganaFamily||p.furiganaMiddle||p.furiganaGiven) return [p.furiganaFamily,p.furiganaMiddle,p.furiganaGiven].filter(Boolean).join(' '); if(p.furigana) return p.furigana; return ''; },
+        toastMessage(msg){ this.toast.msg=msg; this.toast.show=true; setTimeout(()=>this.toast.show=false,2200); }
       }
-    };
-  },
-
-  async mounted() {
-    onAuthStateChanged(auth, async (user) => {
-      this.currentUser = user;
-      this.isAdmin = !!user;
-      await this.loadPlayers();
-      await this.loadMatches();
-    });
-  },
-
-  methods: {
-    async loginAdmin() {
-      try {
-        await signInWithEmailAndPassword(
-          auth,
-          this.loginForm.email,
-          this.loginForm.password
-        );
-        alert("ログイン成功");
-      } catch (e) {
-        alert("ログイン失敗");
-      }
-    },
-
-    onVideoSelected(e) {
-      this.newPlayer.videoFile = e.target.files[0];
-    },
-
-    onScoreImageSelected(e) {
-      this.newMatch.imageFile = e.target.files[0];
-    },
-
-    async uploadFile(file, folder) {
-      if (!file) return "";
-      const fileRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
-      await uploadBytes(fileRef, file);
-      return await getDownloadURL(fileRef);
-    },
-
-    async addPlayer() {
-      
-
-      const p = JSON.parse(JSON.stringify(this.newPlayer));
-      p.videoUrl = await this.uploadFile(this.newPlayer.videoFile, "videos");
-
-      await addDoc(collection(db, "players"), p);
-      await this.loadPlayers();
-
-      this.newPlayer = {
-        nameFamily: "",
-        nameGiven: "",
-        number: null,
-        pitchHand: "R",
-        memo: "",
-        videoFile: null,
-        videoUrl: ""
-      };
-    },
-
-    async loadPlayers() {
-      const snapshot = await getDocs(collection(db, "players"));
-      this.players = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    },
-
-    async deletePlayer(player) {
-      
-
-      await deleteDoc(doc(db, "players", player.id));
-      await this.loadPlayers();
-    },
-
-    async addMatch() {
-      
-
-      const imageUrl = await this.uploadFile(this.newMatch.imageFile, "matches");
-
-      await addDoc(collection(db, "matches"), {
-        date: this.newMatch.date,
-        imageUrl
-      });
-
-      await this.loadMatches();
-    },
-
-    async loadMatches() {
-      const snapshot = await getDocs(collection(db, "matches"));
-      this.matches = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    },
-
-    backupAllData() {
-      const backup = {
-        players: this.players,
-        matches: this.matches,
-        exportedAt: new Date().toISOString()
-      };
-
-      const blob = new Blob(
-        [JSON.stringify(backup, null, 2)],
-        { type: "application/json" }
-      );
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "icu-baseball-backup.json";
-      a.click();
-    }
-  }
-}).mount("#app");
-</script>
+    }).mount('#app');
+  </script>
 </body>
 </html>
