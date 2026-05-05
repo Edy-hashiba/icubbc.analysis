@@ -45,6 +45,16 @@
 <body>
   <div id="app" class="container">
 
+    <!-- ローディング -->
+    <div v-if="loading" class="d-flex justify-content-center align-items-center" style="min-height:200px">
+      <div class="text-center text-muted">
+        <div class="spinner-border mb-2" role="status"></div>
+        <div>データを読み込んでいます...</div>
+      </div>
+    </div>
+
+    <div v-if="!loading">
+
     <!-- ヘッダー -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3>{{ i18n.appTitle }}</h3>
@@ -812,9 +822,36 @@
       </div>
     </div>
 
-  </div>
+    </div><!-- /v-if="!loading" -->
 
-  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+  </div>
+  <script>
+    // ── Supabase 設定 ──────────────────────────────────────
+    const SUPA_URL = 'https://rfymsngkadvvxqxlzpsf.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmeW1zbmdrYWR2dnhxeGx6cHNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5Mzg2OTMsImV4cCI6MjA5MzUxNDY5M30.72b3TmAI3koTUhqLJNDV3ug_xtnPdfSczuEHGSm91MI';
+    const HEADERS  = { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
+
+    async function sbGet(table) {
+      const res = await fetch(`${SUPA_URL}/rest/v1/${table}?select=*`, { headers: HEADERS });
+      if (!res.ok) throw new Error(await res.text());
+      return await res.json();
+    }
+    async function sbUpsert(table, row) {
+      const res = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(row)
+      });
+      if (!res.ok) throw new Error(await res.text());
+    }
+    async function sbDelete(table, id) {
+      const res = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+        method: 'DELETE', headers: HEADERS
+      });
+      if (!res.ok) throw new Error(await res.text());
+    }
+    // ──────────────────────────────────────────────────────
+  </script>
   <script>
     const { createApp } = Vue;
 
@@ -829,11 +866,12 @@
         const svgHeight = 560;
         return {
           tab: 'add',
+          loading: true,
           lang: localStorage.getItem('lang') || 'ja',
-          schools:   JSON.parse(localStorage.getItem('schools')   || '[]'),
-          players:   JSON.parse(localStorage.getItem('players')   || '[]'),
-          matches:   JSON.parse(localStorage.getItem('matches')   || '[]'),
-          templates: JSON.parse(localStorage.getItem('templates') || '[]'),
+          schools:   [],
+          players:   [],
+          matches:   [],
+          templates: [],
           templateName: '',
           newPlayer: {
             id: null,
@@ -865,7 +903,7 @@
             hitsAllowed: null, walksAllowed: null, strikeouts: null, earnedRuns: null
           },
           toast: { show: false, msg: '' },
-          settings: { scheduleUrl: (JSON.parse(localStorage.getItem('settings') || '{}')).scheduleUrl || '' },
+          settings: { scheduleUrl: '' },
           newSchool: '',
           svgWidth, svgHeight,
           zoneShapesPitch: JSON.parse(localStorage.getItem('zoneShapesPitch') || '[]'),
@@ -1008,10 +1046,25 @@
         }
       },
 
-      mounted() {
+      async mounted() {
+        try {
+          const [playersRows, matchesRows, templatesRows, schoolsRows, settingsRows] = await Promise.all([
+            sbGet('players'), sbGet('matches'), sbGet('templates'), sbGet('schools'), sbGet('settings')
+          ]);
+          this.players   = playersRows.map(r => r.data);
+          this.matches   = matchesRows.map(r => r.data);
+          this.templates = templatesRows.map(r => r.data);
+          this.schools   = schoolsRows.map(r => r.data.name);
+          const s = settingsRows.find(r => r.key === 'scheduleUrl');
+          if (s) this.settings.scheduleUrl = s.value.url || '';
+        } catch(e) {
+          console.error('Supabase load error:', e);
+          this.toastMessage('データ読み込みエラー: ' + e.message);
+        }
         this.searchResults = this.players.slice();
         if (!Array.isArray(this.zoneShapesPitch)) this.zoneShapesPitch = [];
         if (!Array.isArray(this.zoneShapesBat))   this.zoneShapesBat   = [];
+        this.loading = false;
       },
 
       methods: {
@@ -1028,7 +1081,7 @@
             this.newPlayer.positions.push(this.selectedPos);
         },
         removePosition(i) { this.newPlayer.positions.splice(i, 1); },
-        addPlayer() {
+        async addPlayer() {
           if (!this.newPlayer.nameFamily && !this.newPlayer.nameGiven) {
             alert('名前を入力してください'); return;
           }
@@ -1041,7 +1094,7 @@
           p.zoneShapesPitch = JSON.parse(JSON.stringify(this.zoneShapesPitch));
           p.zoneShapesBat   = JSON.parse(JSON.stringify(this.zoneShapesBat));
           this.players.push(p);
-          localStorage.setItem('players', JSON.stringify(this.players));
+          await sbUpsert('players', { id: p.id, data: p });
           this.newPlayer = {
             id: null, nameFamily: '', nameMiddle: '', nameGiven: '',
             furiganaFamily: '', furiganaMiddle: '', furiganaGiven: '',
@@ -1110,14 +1163,14 @@
           };
           this.statStep = 2;
         },
-        saveStat() {
+        async saveStat() {
           if (!this.statTargetPlayer) return;
           const stat = Object.assign({ id: 's_' + Date.now() }, JSON.parse(JSON.stringify(this.statForm)));
           const idx = this.players.findIndex(p => p.id === this.statTargetPlayer.id);
           if (idx === -1) return;
           if (!Array.isArray(this.players[idx].stats)) this.players[idx].stats = [];
           this.players[idx].stats.push(stat);
-          localStorage.setItem('players', JSON.stringify(this.players));
+          await sbUpsert('players', { id: this.players[idx].id, data: this.players[idx] });
           this.searchResults = this.players.slice();
           this.toastMessage('成績を保存しました');
           this.statStep = 1;
@@ -1205,7 +1258,7 @@
         removePositionEdit(i) {
           this.inlinePlayer.positions.splice(i, 1);
         },
-        saveInlineEdit() {
+        async saveInlineEdit() {
           if (!this.inlinePlayer) return;
           const idx = this.players.findIndex(p => p.id === this.inlinePlayer.id);
           if (idx === -1) return;
@@ -1213,16 +1266,16 @@
           updated.name     = [updated.nameFamily, updated.nameMiddle, updated.nameGiven].filter(Boolean).join(' ');
           updated.furigana = [updated.furiganaFamily, updated.furiganaMiddle, updated.furiganaGiven].filter(Boolean).join(' ');
           this.players.splice(idx, 1, updated);
-          localStorage.setItem('players', JSON.stringify(this.players));
+          await sbUpsert('players', { id: updated.id, data: updated });
           this.searchResults = this.searchResults.map(p => p.id === updated.id ? updated : p);
           this.toastMessage('保存しました');
           this.closeInline();
         },
         confirmDeletePlayer(player) { if (!confirm('削除しますか？')) return; this.deletePlayer(player); },
-        deletePlayer(player) {
+        async deletePlayer(player) {
           this.players       = this.players.filter(p => p.id !== player.id);
           this.searchResults = this.searchResults.filter(p => p.id !== player.id);
-          localStorage.setItem('players', JSON.stringify(this.players));
+          await sbDelete('players', player.id);
           this.toastMessage('削除しました');
         },
 
@@ -1231,31 +1284,33 @@
           const f = e.target.files[0]; if (!f) return;
           this.newMatch.imageFile = f; this.newMatch.imageUrl = URL.createObjectURL(f);
         },
-        addMatch() {
+        async addMatch() {
           const m = JSON.parse(JSON.stringify(this.newMatch));
           m.id = 'm_' + Date.now();
           this.matches.push(m);
-          localStorage.setItem('matches', JSON.stringify(this.matches));
+          await sbUpsert('matches', { id: m.id, data: m });
           this.newMatch = { id: null, date: '', imageFile: null, imageUrl: null };
           this.toastMessage('保存しました');
         },
 
         // 学校・設定
-        addSchool() {
+        async addSchool() {
           const s = (this.newSchool || '').trim(); if (!s) return;
           if (!this.schools.includes(s)) {
             this.schools.push(s);
-            localStorage.setItem('schools', JSON.stringify(this.schools));
+            await sbUpsert('schools', { id: 'school_' + Date.now(), data: { name: s } });
             this.newSchool = '';
             this.toastMessage('追加しました');
           }
         },
-        removeSchool(s) {
+        async removeSchool(s) {
           this.schools = this.schools.filter(x => x !== s);
-          localStorage.setItem('schools', JSON.stringify(this.schools));
+          const rows = await sbGet('schools');
+          const row = rows.find(r => r.data.name === s);
+          if (row) await sbDelete('schools', row.id);
         },
-        saveSettings() {
-          localStorage.setItem('settings', JSON.stringify(this.settings));
+        async saveSettings() {
+          await sbUpsert('settings', { key: 'scheduleUrl', value: { url: this.settings.scheduleUrl } });
           this.toastMessage('保存しました');
         },
 
@@ -1414,19 +1469,21 @@
           this.selectedIds.forEach(id => { const idx = arr.findIndex(z => z.id === id); if (idx !== -1) { const [it] = arr.splice(idx, 1); arr.unshift(it); } });
           this.persistShapes();
         },
-        saveTemplate() {
+        async saveTemplate() {
           if (!this.templateName || !this.selectedIds.length || !this.selectedCanvas) { alert('テンプレート名と選択図形を指定してください'); return; }
           const arr    = this.selectedCanvas === 'pitch' ? this.zoneShapesPitch : this.zoneShapesBat;
           const shapes = arr.filter(z => this.selectedIds.includes(z.id)).map(z => JSON.parse(JSON.stringify(z)));
-          this.templates.push({ id: 'tpl_' + Date.now(), name: this.templateName, shapes });
-          localStorage.setItem('templates', JSON.stringify(this.templates));
+          const tpl    = { id: 'tpl_' + Date.now(), name: this.templateName, shapes };
+          this.templates.push(tpl);
+          await sbUpsert('templates', { id: tpl.id, data: tpl });
           this.templateName = ''; this.toastMessage('テンプレート保存');
         },
-        saveAllAsTemplate() {
+        async saveAllAsTemplate() {
           if (!this.templateName) { alert('テンプレート名を入力してください'); return; }
           const shapes = JSON.parse(JSON.stringify(this.zoneShapesPitch.concat(this.zoneShapesBat)));
-          this.templates.push({ id: 'tpl_' + Date.now(), name: this.templateName, shapes });
-          localStorage.setItem('templates', JSON.stringify(this.templates));
+          const tpl    = { id: 'tpl_' + Date.now(), name: this.templateName, shapes };
+          this.templates.push(tpl);
+          await sbUpsert('templates', { id: tpl.id, data: tpl });
           this.templateName = ''; this.toastMessage('テンプレート保存');
         },
         applyTemplateToCanvas(tpl, canvas) {
@@ -1435,7 +1492,7 @@
           const clones = tpl.shapes.map(s => { const c = JSON.parse(JSON.stringify(s)); c.id = 'z_'+Date.now()+'_'+Math.floor(Math.random()*1000); c.x+=10; c.y+=10; return c; });
           arr.push(...clones); this.persistShapes(); this.toastMessage('テンプレート適用');
         },
-        applyTemplateToPlayer(tpl) {
+        async applyTemplateToPlayer(tpl) {
           if (!tpl) return;
           const targetPlayer = this.editPlayer || this.newPlayer;
           if (!targetPlayer) { alert('選手が選択されていません'); return; }
@@ -1455,13 +1512,13 @@
           targetPlayer.zoneShapesBat   = (targetPlayer.zoneShapesBat   || []).concat(batShapes);
           if (this.editPlayer) {
             const idx = this.players.findIndex(p => p.id === this.editPlayer.id);
-            if (idx !== -1) { this.players.splice(idx, 1, JSON.parse(JSON.stringify(this.editPlayer))); localStorage.setItem('players', JSON.stringify(this.players)); }
+            if (idx !== -1) { this.players.splice(idx, 1, JSON.parse(JSON.stringify(this.editPlayer))); await sbUpsert('players', { id: this.editPlayer.id, data: this.players[idx] }); }
           }
           this.toastMessage('テンプレートを選手に適用しました');
         },
-        removeTemplate(id) {
+        async removeTemplate(id) {
           this.templates = this.templates.filter(tpl => tpl.id !== id);
-          localStorage.setItem('templates', JSON.stringify(this.templates));
+          await sbDelete('templates', id);
         },
         clearCanvas(canvas) {
           if (canvas === 'pitch') this.zoneShapesPitch = []; else this.zoneShapesBat = [];
@@ -1518,7 +1575,7 @@
         _editorMetaSnapshot() {
           return { cell: this.editor.cell, gridW: this.editor.gridW, gridH: this.editor.gridH, margin: this.editor.margin, wrapperPadding: this.editor.wrapperPadding, marginLeft: this.editor.marginLeft, marginTop: this.editor.marginTop };
         },
-        saveZoneToPlayer(target) {
+        async saveZoneToPlayer(target) {
           const tp = this.editPlayer || this.newPlayer;
           if (!tp) { this.toastMessage('選手が選択されていません'); return; }
           const meta = this._editorMetaSnapshot();
@@ -1538,7 +1595,7 @@
               if (target === 'pitch') { stored.zoneSavedPitch = tp.zoneSavedPitch; stored.zoneShapesPitch = tp.zoneShapesPitch; }
               else                    { stored.zoneSavedBat   = tp.zoneSavedBat;   stored.zoneShapesBat   = tp.zoneShapesBat; }
               this.players.splice(idx, 1, stored);
-              localStorage.setItem('players', JSON.stringify(this.players));
+              await sbUpsert('players', { id: stored.id, data: stored });
             }
           }
         },
