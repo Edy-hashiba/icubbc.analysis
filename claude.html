@@ -50,9 +50,25 @@
 
     <!-- ローディング -->
     <div v-if="loading" class="d-flex justify-content-center align-items-center" style="min-height:200px">
-      <div class="text-center text-muted">
-        <div class="spinner-border mb-2" role="status"></div>
-        <div>データを読み込んでいます...</div>
+      <div class="text-center">
+        <div v-if="!loadError">
+          <div class="spinner-border mb-2 text-muted" role="status"></div>
+          <div class="text-muted">データを読み込んでいます...</div>
+        </div>
+        <div v-else class="text-start">
+          <div class="alert alert-danger">
+            <strong>⚠️ Supabase接続エラー</strong>
+            <div class="mt-2" style="font-size:0.9rem">{{ loadError }}</div>
+          </div>
+          <div class="alert alert-info" style="font-size:0.85rem">
+            <strong>考えられる原因：</strong><br>
+            1. Supabaseプロジェクトが<b>一時停止</b>している（無料プランは非アクティブで停止）<br>
+            &nbsp;&nbsp;→ <a href="https://supabase.com/dashboard" target="_blank">supabase.com/dashboard</a> で再開してください<br>
+            2. <b>CORSエラー</b>（Supabaseの設定でURLを許可する必要あり）<br>
+            3. インターネット接続の問題
+          </div>
+          <button class="btn btn-primary" @click="retryLoad()">🔄 再試行</button>
+        </div>
       </div>
     </div>
 
@@ -878,6 +894,7 @@
         return {
           tab: 'add',
           loading: true,
+          loadError: null,
           realtimeConnected: false,
           lang: localStorage.getItem('lang') || 'ja',
           schools:   [],
@@ -1072,7 +1089,9 @@
           if (s) this.settings.scheduleUrl = s.value.url || '';
         } catch(e) {
           console.error('Supabase load error:', e);
-          this.toastMessage('データ読み込みエラー: ' + e.message);
+          this.loadError = e.message || String(e);
+          this.loading = false;
+          return;
         }
         this.searchResults = this.players.slice();
         if (!Array.isArray(this.zoneShapesPitch)) this.zoneShapesPitch = [];
@@ -1135,6 +1154,11 @@
       },
 
       methods: {
+        async retryLoad() {
+          this.loadError = null;
+          this.loading = true;
+          await this.$options.mounted.call(this);
+        },
         // 選手フォーム
         onVideoSelected(e) {
           const f = e.target.files[0]; if (!f) return;
