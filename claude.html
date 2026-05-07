@@ -1078,13 +1078,14 @@
 
       async mounted() {
         try {
+          const safeGet = async (table) => { try { return await sbGet(table); } catch(e) { console.warn(`テーブル "${table}" の取得をスキップ:`, e.message); return []; } };
           const [playersRows, matchesRows, templatesRows, schoolsRows, settingsRows] = await Promise.all([
-            sbGet('players'), sbGet('matches'), sbGet('templates'), sbGet('schools'), sbGet('settings')
+            safeGet('players'), safeGet('matches'), safeGet('templates'), safeGet('schools'), safeGet('settings')
           ]);
-          this.players   = playersRows.map(r => r.data);
-          this.matches   = matchesRows.map(r => r.data);
-          this.templates = templatesRows.map(r => r.data);
-          this.schools   = schoolsRows.map(r => r.data.name);
+          this.players   = playersRows.map(r => r.data).filter(Boolean);
+          this.matches   = matchesRows.map(r => r.data).filter(Boolean);
+          this.templates = templatesRows.map(r => r.data).filter(Boolean);
+          this.schools   = schoolsRows.map(r => r.data && r.data.name).filter(Boolean);
           const s = settingsRows.find(r => r.key === 'scheduleUrl');
           if (s) this.settings.scheduleUrl = s.value.url || '';
         } catch(e) {
