@@ -6,6 +6,7 @@
   <title>{{ i18n.appTitle }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
   <style>
     body { padding: 1rem; }
     .player-video { max-width: 220px; display: block; margin-top: 0.5rem; }
@@ -41,10 +42,11 @@
       box-shadow: 0 6px 24px rgba(0,0,0,0.3);
     }
     .nav-tabs .nav-link { cursor: pointer; }
+    [v-cloak] { display: none !important; }
   </style>
 </head>
 <body>
-  <div id="app" class="container">
+  <div id="app" class="container" v-cloak>
 
     <!-- ローディング -->
     <div v-if="loading" class="d-flex justify-content-center align-items-center" style="min-height:200px">
@@ -897,6 +899,7 @@
           selectedPosEdit: '投手',
           inlineMode: null,
           inlinePlayer: null,
+          editPlayer: null,
           search: { q: '' },
           searchResults: [],
           newMatch: { id: null, date: '', imageFile: null, imageUrl: null },
@@ -957,19 +960,19 @@
             shapeRect:'四角', shapeCircle:'丸', shapeTriangle:'三角', shapeLine:'線',
             color:'色', opacity:'不透明度', editTarget:'編集対象',
             canvasPitch:'投球（上）', canvasBat:'打撃（下）',
-            canvasHint:'{{ i18n.canvasHint }}', touchHint:'{{ i18n.touchHint }}',
+            canvasHint:'（グリッドを縮小して余白に図形を置けます）', touchHint:'ピンチでズーム',
             toFront:'前面へ', toBack:'背面へ', clearCanvas:'キャンバスをクリア',
             multiSelected:'選択中', colorAll:'色（選択中すべてに適用）',
             opacityAll:'不透明度（選択中すべてに適用）', labelAll:'ラベル（選択中すべてに適用）',
             labelNone:'（なし）', deleteSelected:'削除（選択中）', deselect:'選択解除',
             singleSelected:'単一選択', label:'ラベル', deleteBtn:'削除',
-            noShapeHint:'{{ i18n.noShapeHint }}',
+            noShapeHint:'図形を追加・選択して編集（Shift+クリックで複数選択）',
             templateTitle:'テンプレート', templateNamePlaceholder:'テンプレート名',
             saveSelected:'選択をテンプレート保存', saveAll:'キャンバス全体をテンプレート保存',
             shapeCount:'図形数', applyCanvas:'適用（現在のキャンバス）', applyPlayer:'適用（選手へ）',
             noTemplate:'テンプレートがありません',
             saveLoadTitle:'保存 / 読み込み / 画像出力',
-            saveLoadHint:'{{ i18n.saveLoadHint }}',
+            saveLoadHint:'図形は選手ごと（投球/打撃）に保存でき、余白情報も含まれます。',
             savePitch:'投球を選手に保存', saveBat:'打撃を選手に保存',
             loadPitch:'選手の投球を読み込み', loadBat:'選手の打撃を読み込み',
             exportPitch:'投球を画像で保存（余白含む）', exportBat:'打撃を画像で保存（余白含む）',
@@ -984,7 +987,7 @@
             settingsTitle:'設定', schoolReg:'学校登録', schoolPlaceholder:'学校名',
             addSchool:'追加', noSchool:'学校が登録されていません',
             scheduleUrl:'外部リンク（試合日程）',
-            scheduleUrlHint:'{{ i18n.scheduleUrlHint }}',
+            scheduleUrlHint:'このURLは試合結果タブにリンクとして表示されます。',
           };
           const en = {
             appTitle:'ICU Baseball Analysis (beta)', langLabel:'Language',
