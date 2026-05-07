@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>{{ i18n.appTitle }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { padding: 1rem; }
     .player-video { max-width: 220px; display: block; margin-top: 0.5rem; }
@@ -59,6 +60,11 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3>{{ i18n.appTitle }}</h3>
       <div class="d-flex align-items-center gap-2">
+        <!-- リアルタイム同期インジケーター -->
+        <span :title="realtimeConnected ? '他のユーザーとリアルタイム同期中' : '接続中...'">
+          <span v-if="realtimeConnected" style="font-size:0.8rem;color:#198754;">● リアルタイム同期中</span>
+          <span v-else style="font-size:0.8rem;color:#aaa;">○ 接続中...</span>
+        </span>
         <label class="small-muted mb-0 me-1">{{ i18n.langLabel }}</label>
         <select v-model="lang" class="form-select form-select-sm" style="width:auto">
           <option value="ja">日本語</option>
@@ -831,6 +837,9 @@
     const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJmeW1zbmdrYWR2dnhxeGx6cHNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5Mzg2OTMsImV4cCI6MjA5MzUxNDY5M30.72b3TmAI3koTUhqLJNDV3ug_xtnPdfSczuEHGSm91MI';
     const HEADERS  = { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
 
+    // Supabase JS クライアント（Realtime用）
+    const supabaseClient = supabase.createClient(SUPA_URL, SUPA_KEY);
+
     async function sbGet(table) {
       const res = await fetch(`${SUPA_URL}/rest/v1/${table}?select=*`, { headers: HEADERS });
       if (!res.ok) throw new Error(await res.text());
@@ -867,6 +876,7 @@
         return {
           tab: 'add',
           loading: true,
+          realtimeConnected: false,
           lang: localStorage.getItem('lang') || 'ja',
           schools:   [],
           players:   [],
@@ -1065,6 +1075,60 @@
         if (!Array.isArray(this.zoneShapesPitch)) this.zoneShapesPitch = [];
         if (!Array.isArray(this.zoneShapesBat))   this.zoneShapesBat   = [];
         this.loading = false;
+
+        // ── Realtime 購読（全ユーザー間でデータを即時同期） ──
+        const self = this;
+
+        const channel = supabaseClient.channel('db-changes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, (payload) => {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const newData = payload.new.data;
+              const idx = self.players.findIndex(p => p.id === payload.new.id);
+              if (idx !== -1) {
+                self.players.splice(idx, 1, newData);
+              } else {
+                self.players.push(newData);
+              }
+              self.searchResults = self.players.slice();
+            } else if (payload.eventType === 'DELETE') {
+              self.players = self.players.filter(p => p.id !== payload.old.id);
+              self.searchResults = self.searchResults.filter(p => p.id !== payload.old.id);
+            }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const newData = payload.new.data;
+              const idx = self.matches.findIndex(m => m.id === payload.new.id);
+              if (idx !== -1) { self.matches.splice(idx, 1, newData); }
+              else { self.matches.push(newData); }
+            } else if (payload.eventType === 'DELETE') {
+              self.matches = self.matches.filter(m => m.id !== payload.old.id);
+            }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'templates' }, (payload) => {
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              const newData = payload.new.data;
+              const idx = self.templates.findIndex(t => t.id === payload.new.id);
+              if (idx !== -1) { self.templates.splice(idx, 1, newData); }
+              else { self.templates.push(newData); }
+            } else if (payload.eventType === 'DELETE') {
+              self.templates = self.templates.filter(t => t.id !== payload.old.id);
+            }
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'schools' }, async () => {
+            // 学校リストは単純なので再取得
+            const rows = await sbGet('schools');
+            self.schools = rows.map(r => r.data.name);
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, async () => {
+            const rows = await sbGet('settings');
+            const s = rows.find(r => r.key === 'scheduleUrl');
+            if (s) self.settings.scheduleUrl = s.value.url || '';
+          })
+          .subscribe((status) => {
+            self.realtimeConnected = (status === 'SUBSCRIBED');
+          });
+        // ────────────────────────────────────────────────────
       },
 
       methods: {
