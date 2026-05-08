@@ -8,12 +8,66 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
   <style>
-    body { padding: 1rem; }
-    .player-video { max-width: 220px; display: block; margin-top: 0.5rem; }
-    .score-img { max-width: 300px; display: block; margin-top: 0.5rem; }
-    .small-muted { font-size: 0.9rem; color: #6c757d; }
-    .pos-tag { display: inline-block; background: #e9ecef; padding: 4px 8px; border-radius: 12px; margin-right: 6px; margin-bottom: 6px; cursor: pointer; }
-    .zone-canvas { border: 1px solid #ddd; background: #fff; touch-action: none; display: block; }
+    /* ── ベース ── */
+    body { padding: 0; background: #f8f9fa; }
+    #app { padding: 0; max-width: 100%; }
+
+    /* ── ヘッダー ── */
+    .app-header {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff; border-bottom: 1px solid #dee2e6;
+      padding: 8px 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .app-header h6 { margin: 0; font-weight: 700; font-size: 1rem; }
+
+    /* ── ボトムタブナビ（スマホ） ── */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: #fff; border-top: 1px solid #dee2e6;
+      display: flex;
+    }
+    .bottom-nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 6px 0 8px; font-size: 0.65rem; color: #6c757d;
+      cursor: pointer; border: none; background: none;
+      transition: color 0.15s;
+    }
+    .bottom-nav-item.active { color: #0d6efd; }
+    .bottom-nav-item .nav-icon { font-size: 1.3rem; line-height: 1; margin-bottom: 2px; }
+
+    /* ── コンテンツエリア ── */
+    .app-content { padding: 12px; padding-bottom: 72px; }
+
+    /* ── カード ── */
+    .card { border-radius: 10px; border: 1px solid #e9ecef; margin-bottom: 12px; }
+    .card-inner { padding: 14px; }
+
+    /* ── フォーム ── */
+    .form-label { font-size: 0.82rem; font-weight: 600; margin-bottom: 3px; color: #495057; }
+    .form-control, .form-select { font-size: 0.9rem; }
+
+    /* ── 選手リスト ── */
+    .player-card {
+      background: #fff; border: 1px solid #e9ecef; border-radius: 10px;
+      padding: 12px; margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px;
+    }
+    .player-card-info { flex: 1; min-width: 0; }
+    .player-card-name { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player-card-sub { font-size: 0.78rem; color: #6c757d; margin-top: 2px; }
+    .player-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ── ゾーンキャンバス ── */
+    .zone-canvas { border: 1px solid #ddd; background: #fff; touch-action: none; display: block; max-width: 100%; }
+    .zone-canvas-wrap { overflow-x: auto; }
+
+    /* ── その他 ── */
+    .player-video { max-width: 100%; display: block; margin-top: 0.5rem; border-radius: 8px; }
+    .score-img { max-width: 100%; display: block; margin-top: 0.5rem; border-radius: 8px; }
+    .small-muted { font-size: 0.85rem; color: #6c757d; }
+    .pos-tag { display: inline-block; background: #e9ecef; padding: 3px 8px; border-radius: 12px; margin-right: 4px; margin-bottom: 4px; cursor: pointer; font-size: 0.82rem; }
     .shape-handle { fill: #fff; stroke: #333; stroke-width: 1; cursor: se-resize; }
     .shape-selected { stroke: #007bff; stroke-width: 2; }
     .controls-row { gap: 8px; display: flex; align-items: center; flex-wrap: wrap; }
@@ -24,16 +78,13 @@
     .layer-controls { display: flex; gap: 6px; }
     .template-list { max-height: 160px; overflow: auto; }
     .label-badge { background: rgba(0,0,0,0.6); color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 0.8rem; pointer-events: none; }
-    .canvas-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .touch-hint { font-size: 0.85rem; color: #666; }
-    .player-zone-thumb { width: 320px; height: 320px; border: 1px solid #ddd; background: #fff; display: block; }
-    .thumb-caption { font-size: 0.9rem; color: #333; margin-top: 6px; }
+    .canvas-toolbar { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .touch-hint { font-size: 0.82rem; color: #666; }
+    .player-zone-thumb { width: 100%; max-width: 280px; height: auto; border: 1px solid #ddd; background: #fff; display: block; }
+    .thumb-caption { font-size: 0.85rem; color: #333; margin-top: 4px; }
     .modal-svgs { display: flex; gap: 12px; flex-wrap: wrap; }
-    .modal-svgs .svg-card { width: 340px; }
-    .modal-backdrop-custom {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45); z-index: 1040;
-    }
+    .modal-svgs .svg-card { width: 100%; max-width: 340px; }
+    .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1040; }
     .modal-custom {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -41,21 +92,35 @@
       width: 95%; max-width: 1100px;
       box-shadow: 0 6px 24px rgba(0,0,0,0.3);
     }
-    .nav-tabs .nav-link { cursor: pointer; }
     [v-cloak] { display: none !important; }
+
+    /* ── デスクトップ上書き ── */
+    @media (min-width: 768px) {
+      body { padding: 1rem; }
+      #app { max-width: 960px; margin: 0 auto; }
+      .bottom-nav { display: none; }
+      .app-content { padding: 16px; padding-bottom: 16px; }
+      .desktop-tabs { display: flex !important; }
+      .app-header { position: static; border-radius: 10px 10px 0 0; }
+    }
+    @media (max-width: 767px) {
+      .desktop-tabs { display: none !important; }
+      .table-responsive { font-size: 0.75rem; }
+      h5 { font-size: 1rem; }
+    }
   </style>
 </head>
 <body>
-  <div id="app" class="container" v-cloak>
+  <div id="app" v-cloak>
 
     <!-- ローディング -->
-    <div v-if="loading" class="d-flex justify-content-center align-items-center" style="min-height:200px">
+    <div v-if="loading" class="d-flex justify-content-center align-items-center" style="min-height:100vh">
       <div class="text-center">
         <div v-if="!loadError">
           <div class="spinner-border mb-2 text-muted" role="status"></div>
           <div class="text-muted">データを読み込んでいます...</div>
         </div>
-        <div v-else class="text-start">
+        <div v-else class="text-start p-3">
           <div class="alert alert-danger">
             <strong>⚠️ Supabase接続エラー</strong>
             <div class="mt-2" style="font-size:0.9rem">{{ loadError }}</div>
@@ -75,37 +140,30 @@
     <div v-if="!loading">
 
     <!-- ヘッダー -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h3>{{ i18n.appTitle }}</h3>
+    <div class="app-header">
+      <h6>⚾ {{ i18n.appTitle }}</h6>
       <div class="d-flex align-items-center gap-2">
-        <!-- リアルタイム同期インジケーター -->
-        <span :title="realtimeConnected ? '他のユーザーとリアルタイム同期中' : '接続中...'">
-          <span v-if="realtimeConnected" style="font-size:0.8rem;color:#198754;">● リアルタイム同期中</span>
-          <span v-else style="font-size:0.8rem;color:#aaa;">○ 接続中...</span>
+        <span :title="realtimeConnected ? 'リアルタイム同期中' : '接続中...'">
+          <span v-if="realtimeConnected" style="font-size:0.72rem;color:#198754;">● 同期中</span>
+          <span v-else style="font-size:0.72rem;color:#aaa;">○ 接続中</span>
         </span>
-        <label class="small-muted mb-0 me-1">{{ i18n.langLabel }}</label>
-        <select v-model="lang" class="form-select form-select-sm" style="width:auto">
-          <option value="ja">日本語</option>
-          <option value="en">English</option>
+        <select v-model="lang" class="form-select form-select-sm" style="width:auto;font-size:0.78rem">
+          <option value="ja">JA</option>
+          <option value="en">EN</option>
         </select>
       </div>
     </div>
 
-    <!-- タブ -->
-    <ul class="nav nav-tabs mb-3" role="tablist">
-      <li class="nav-item" role="presentation">
-        <a class="nav-link" :class="{active: tab==='add'}" @click="tab='add'">{{ i18n.tabAdd }}</a>
-      </li>
-      <li class="nav-item" role="presentation">
-        <a class="nav-link" :class="{active: tab==='search'}" @click="tab='search'">{{ i18n.tabSearch }}</a>
-      </li>
-      <li class="nav-item" role="presentation">
-        <a class="nav-link" :class="{active: tab==='match'}" @click="tab='match'">{{ i18n.tabMatch }}</a>
-      </li>
-      <li class="nav-item" role="presentation">
-        <a class="nav-link" :class="{active: tab==='settings'}" @click="tab='settings'">{{ i18n.tabSettings }}</a>
-      </li>
+    <!-- デスクトップ用タブ -->
+    <ul class="nav nav-tabs mb-0 desktop-tabs px-2 pt-2 bg-white border-bottom" style="display:none" role="tablist">
+      <li class="nav-item"><a class="nav-link" :class="{active:tab==='add'}" @click="tab='add'" style="cursor:pointer">{{ i18n.tabAdd }}</a></li>
+      <li class="nav-item"><a class="nav-link" :class="{active:tab==='search'}" @click="tab='search'" style="cursor:pointer">{{ i18n.tabSearch }}</a></li>
+      <li class="nav-item"><a class="nav-link" :class="{active:tab==='match'}" @click="tab='match'" style="cursor:pointer">{{ i18n.tabMatch }}</a></li>
+      <li class="nav-item"><a class="nav-link" :class="{active:tab==='settings'}" @click="tab='settings'" style="cursor:pointer">{{ i18n.tabSettings }}</a></li>
     </ul>
+
+    <!-- コンテンツ -->
+    <div class="app-content">
 
     <!-- 選手追加タブ -->
     <div v-if="tab==='add'">
@@ -983,7 +1041,7 @@
     </div>
 
     <!-- トースト -->
-    <div v-if="toast.show" class="position-fixed bottom-0 end-0 p-3" style="z-index:2000">
+    <div v-if="toast.show" class="position-fixed p-3" style="z-index:2000;bottom:70px;right:0">
       <div class="toast show align-items-center text-bg-success border-0">
         <div class="d-flex">
           <div class="toast-body">{{ toast.msg }}</div>
@@ -992,8 +1050,29 @@
       </div>
     </div>
 
-    </div><!-- /v-if="!loading" -->
+    </div><!-- /app-content -->
 
+    <!-- スマホ用ボトムナビ -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item" :class="{active:tab==='add'}" @click="tab='add'">
+        <span class="nav-icon">➕</span>
+        <span>選手追加</span>
+      </button>
+      <button class="bottom-nav-item" :class="{active:tab==='search'}" @click="tab='search'">
+        <span class="nav-icon">🔍</span>
+        <span>検索</span>
+      </button>
+      <button class="bottom-nav-item" :class="{active:tab==='match'}" @click="tab='match'">
+        <span class="nav-icon">⚾</span>
+        <span>試合</span>
+      </button>
+      <button class="bottom-nav-item" :class="{active:tab==='settings'}" @click="tab='settings'">
+        <span class="nav-icon">⚙️</span>
+        <span>設定</span>
+      </button>
+    </nav>
+
+    </div><!-- /v-if="!loading" -->
   </div>
   <script>
     // ── Supabase 設定 ──────────────────────────────────────
