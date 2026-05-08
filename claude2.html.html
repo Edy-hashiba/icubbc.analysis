@@ -189,6 +189,12 @@
             <video v-if="newPlayer.videoUrl" :src="newPlayer.videoUrl" controls class="player-video"></video>
           </div>
 
+          <div class="col-md-4">
+            <label class="form-label">画像</label>
+            <input type="file" accept="image/*" @change="onPlayerImageSelected" class="form-control">
+            <img v-if="newPlayer.imageUrl" :src="newPlayer.imageUrl" style="max-width:200px;margin-top:0.5rem;display:block;border-radius:4px">
+          </div>
+
           <div class="col-12">
             <label class="form-label">{{ i18n.memo }}</label>
             <textarea v-model="newPlayer.memo" class="form-control" rows="3"></textarea>
@@ -409,29 +415,27 @@
                       </ul>
                     </div>
                   </div>
-                  <hr>
-                  <div>
-                    <strong>{{ i18n.saveLoadTitle }}</strong>
-                    <div class="small-muted">{{ i18n.saveLoadHint }}</div>
-                    <div class="mt-2 d-flex gap-2 flex-wrap">
-                      <button class="btn btn-sm btn-outline-primary" @click="saveZoneToPlayer('pitch')">{{ i18n.savePitch }}</button>
-                      <button class="btn btn-sm btn-outline-primary" @click="saveZoneToPlayer('bat')">{{ i18n.saveBat }}</button>
-                      <button class="btn btn-sm btn-outline-secondary" @click="loadZoneFromPlayer('pitch')">{{ i18n.loadPitch }}</button>
-                      <button class="btn btn-sm btn-outline-secondary" @click="loadZoneFromPlayer('bat')">{{ i18n.loadBat }}</button>
-                    </div>
-                    <div class="mt-2 d-flex gap-2">
-                      <button class="btn btn-sm btn-outline-success" @click="exportZoneImage('pitch')">{{ i18n.exportPitch }}</button>
-                      <button class="btn btn-sm btn-outline-success" @click="exportZoneImage('bat')">{{ i18n.exportBat }}</button>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="col-12 text-end mt-2">
-            <button class="btn btn-primary" @click="addPlayer()">{{ i18n.addBtn }}</button>
+            <button class="btn btn-primary" @click="showZoneSaveModal()">{{ i18n.addBtn }}</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ゾーン保存確認モーダル -->
+    <div v-if="zoneSaveModalVisible" class="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,0.5);z-index:9999">
+      <div class="card p-4" style="min-width:320px;max-width:420px">
+        <h6 class="mb-3">📐 打撃・投球の図形データを保存しますか？</h6>
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-primary" @click="confirmAddPlayer('both')">どちらも保存</button>
+          <button class="btn btn-outline-secondary" @click="confirmAddPlayer('pitch')">投球のみ保存</button>
+          <button class="btn btn-outline-secondary" @click="confirmAddPlayer('bat')">打撃のみ保存</button>
+          <button class="btn btn-outline-danger" @click="confirmAddPlayer('none')">どちらも保存しない</button>
         </div>
       </div>
     </div>
@@ -493,9 +497,15 @@
                 <tr><th>{{ i18n.memo }}</th><td style="white-space:pre-wrap">{{ inlinePlayer.memo || '―' }}</td></tr>
               </tbody>
             </table>
-            <div v-if="inlinePlayer.videoUrl">
-              <strong>{{ i18n.video }}:</strong>
-              <video :src="inlinePlayer.videoUrl" controls class="player-video"></video>
+            <div v-if="inlinePlayer.videoUrl || inlinePlayer.imageUrl" class="mt-2 d-flex flex-wrap gap-3">
+              <div v-if="inlinePlayer.imageUrl">
+                <strong class="d-block mb-1">画像:</strong>
+                <img :src="inlinePlayer.imageUrl" style="max-width:240px;border-radius:6px;border:1px solid #ddd">
+              </div>
+              <div v-if="inlinePlayer.videoUrl">
+                <strong class="d-block mb-1">{{ i18n.video }}:</strong>
+                <video :src="inlinePlayer.videoUrl" controls class="player-video"></video>
+              </div>
             </div>
             <!-- 成績一覧 -->
             <div v-if="inlinePlayer.stats && inlinePlayer.stats.length > 0" class="mt-3">
@@ -536,6 +546,43 @@
               </div>
             </div>
             <div v-else class="mt-3 small-muted">成績データなし</div>
+
+            <!-- ゾーン図表示 -->
+            <div class="mt-3" v-if="(inlinePlayer.zoneShapesPitch && inlinePlayer.zoneShapesPitch.length > 0) || (inlinePlayer.zoneShapesBat && inlinePlayer.zoneShapesBat.length > 0)">
+              <strong class="d-block mb-2">投球・打撃ゾーン図</strong>
+              <div class="d-flex flex-wrap gap-4">
+                <!-- 投球ゾーン -->
+                <div v-if="inlinePlayer.zoneShapesPitch && inlinePlayer.zoneShapesPitch.length > 0">
+                  <div class="small text-muted mb-1 text-center">投球</div>
+                  <svg viewBox="0 0 320 320" width="240" height="240" style="border:1px solid #ddd;background:#fff;display:block">
+                    <!-- ストライクゾーン枠 -->
+                    <rect x="96" y="64" width="128" height="160" fill="none" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    <g v-for="s in inlinePlayer.zoneShapesPitch" :key="s.id" :opacity="s.opacity">
+                      <rect v-if="s.type==='rect'" :x="s.x" :y="s.y" :width="s.w" :height="s.h" :fill="s.color" :stroke="s.color" stroke-width="1.5" fill-opacity="0.45"/>
+                      <ellipse v-else-if="s.type==='circle'" :cx="s.x+s.w/2" :cy="s.y+s.h/2" :rx="s.w/2" :ry="s.h/2" :fill="s.color" :stroke="s.color" stroke-width="1.5" fill-opacity="0.45"/>
+                      <polygon v-else-if="s.type==='triangle'" :points="`${s.x+s.w/2},${s.y} ${s.x},${s.y+s.h} ${s.x+s.w},${s.y+s.h}`" :fill="s.color" :stroke="s.color" stroke-width="1.5" fill-opacity="0.45"/>
+                      <line v-else-if="s.type==='line'" :x1="s.x" :y1="s.y" :x2="s.x+s.w" :y2="s.y+s.h" :stroke="s.color" stroke-width="2.5" stroke-linecap="round"/>
+                      <text v-if="s.label" :x="s.x+s.w/2" :y="s.y+s.h/2+5" text-anchor="middle" font-size="12" :fill="s.color" style="pointer-events:none;user-select:none">{{ s.label }}</text>
+                    </g>
+                  </svg>
+                </div>
+                <!-- 打撃ゾーン -->
+                <div v-if="inlinePlayer.zoneShapesBat && inlinePlayer.zoneShapesBat.length > 0">
+                  <div class="small text-muted mb-1 text-center">打撃</div>
+                  <svg viewBox="0 0 320 320" width="240" height="240" style="border:1px solid #ddd;background:#fff;display:block">
+                    <rect x="96" y="64" width="128" height="160" fill="none" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+                    <g v-for="s in inlinePlayer.zoneShapesBat" :key="s.id" :opacity="s.opacity">
+                      <rect v-if="s.type==='rect'" :x="s.x" :y="s.y" :width="s.w" :height="s.h" :fill="s.color" :stroke="s.color" stroke-width="1.5" fill-opacity="0.45"/>
+                      <ellipse v-else-if="s.type==='circle'" :cx="s.x+s.w/2" :cy="s.y+s.h/2" :rx="s.w/2" :ry="s.h/2" :fill="s.color" :stroke="s.color" stroke-width="1.5" fill-opacity="0.45"/>
+                      <polygon v-else-if="s.type==='triangle'" :points="`${s.x+s.w/2},${s.y} ${s.x},${s.y+s.h} ${s.x+s.w},${s.y+s.h}`" :fill="s.color" :stroke="s.color" stroke-width="1.5" fill-opacity="0.45"/>
+                      <line v-else-if="s.type==='line'" :x1="s.x" :y1="s.y" :x2="s.x+s.w" :y2="s.y+s.h" :stroke="s.color" stroke-width="2.5" stroke-linecap="round"/>
+                      <text v-if="s.label" :x="s.x+s.w/2" :y="s.y+s.h/2+5" text-anchor="middle" font-size="12" :fill="s.color" style="pointer-events:none;user-select:none">{{ s.label }}</text>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div v-else class="mt-3 small-muted">ゾーン図データなし</div>
           </div>
 
           <!-- 編集パネル -->
@@ -615,6 +662,102 @@
                 <label class="form-label">{{ i18n.memo }}</label>
                 <textarea v-model="inlinePlayer.memo" class="form-control" rows="3"></textarea>
               </div>
+              <div class="col-md-6">
+                <label class="form-label">動画を変更</label>
+                <input type="file" accept="video/*" @change="e => { _editVideoFile = e.target.files[0]; inlinePlayer.videoUrl = URL.createObjectURL(e.target.files[0]) }" class="form-control">
+                <video v-if="inlinePlayer.videoUrl" :src="inlinePlayer.videoUrl" controls class="player-video mt-1"></video>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">画像を変更</label>
+                <input type="file" accept="image/*" @change="e => { _editImageFile = e.target.files[0]; inlinePlayer.imageUrl = URL.createObjectURL(e.target.files[0]) }" class="form-control">
+                <img v-if="inlinePlayer.imageUrl" :src="inlinePlayer.imageUrl" style="max-width:180px;margin-top:0.5rem;display:block;border-radius:4px">
+              </div>
+
+              <!-- ゾーン図編集 -->
+              <div class="col-12">
+                <hr>
+                <label class="form-label fw-bold">投球・打撃ゾーン図編集</label>
+                <!-- ツールバー -->
+                <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+                  <button class="btn btn-sm btn-outline-secondary" @click="editZoneAdd('rect')">矩形</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="editZoneAdd('circle')">円</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="editZoneAdd('triangle')">三角</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="editZoneAdd('line')">直線</button>
+                  <input type="color" v-model="editZoneTool.color" style="width:36px;height:32px;padding:2px;border:1px solid #ccc;border-radius:4px">
+                  <input type="range" min="0.1" max="1" step="0.1" v-model.number="editZoneTool.opacity" style="width:80px">
+                  <select v-model="editZoneTool.canvas" class="form-select form-select-sm" style="width:auto">
+                    <option value="pitch">投球</option>
+                    <option value="bat">打撃</option>
+                  </select>
+                </div>
+                <!-- キャンバス -->
+                <div class="d-flex flex-wrap gap-4">
+                  <!-- 投球 -->
+                  <div>
+                    <div class="small text-muted mb-1 text-center">投球</div>
+                    <svg viewBox="0 0 320 320" width="260" height="260" class="zone-canvas"
+                      @mousedown="editZoneMouseDown($event,'pitch')"
+                      @mousemove="editZoneMouseMove($event,'pitch')"
+                      @mouseup="editZoneMouseUp($event,'pitch')"
+                      @mouseleave="editZoneMouseUp($event,'pitch')">
+                      <rect x="96" y="64" width="128" height="160" fill="none" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+                      <g v-for="s in inlinePlayer.zoneShapesPitch" :key="s.id" :opacity="s.opacity"
+                         @mousedown.stop="editZoneSelectShape($event,s,'pitch')"
+                         :style="{cursor: editZoneSel.includes(s.id) ? 'move' : 'pointer'}">
+                        <rect v-if="s.type==='rect'" :x="s.x" :y="s.y" :width="s.w" :height="s.h" :fill="s.color" :stroke="editZoneSel.includes(s.id)?'#000':s.color" :stroke-width="editZoneSel.includes(s.id)?2:1.5" fill-opacity="0.45"/>
+                        <ellipse v-else-if="s.type==='circle'" :cx="s.x+s.w/2" :cy="s.y+s.h/2" :rx="Math.abs(s.w/2)" :ry="Math.abs(s.h/2)" :fill="s.color" :stroke="editZoneSel.includes(s.id)?'#000':s.color" :stroke-width="editZoneSel.includes(s.id)?2:1.5" fill-opacity="0.45"/>
+                        <polygon v-else-if="s.type==='triangle'" :points="`${s.x+s.w/2},${s.y} ${s.x},${s.y+s.h} ${s.x+s.w},${s.y+s.h}`" :fill="s.color" :stroke="editZoneSel.includes(s.id)?'#000':s.color" :stroke-width="editZoneSel.includes(s.id)?2:1.5" fill-opacity="0.45"/>
+                        <line v-else-if="s.type==='line'" :x1="s.x" :y1="s.y" :x2="s.x+s.w" :y2="s.y+s.h" :stroke="s.color" stroke-width="2.5" stroke-linecap="round"/>
+                        <text v-if="s.label" :x="s.x+s.w/2" :y="s.y+s.h/2+5" text-anchor="middle" font-size="12" :fill="s.color" style="pointer-events:none;user-select:none">{{ s.label }}</text>
+                        <!-- リサイズハンドル（選択中のみ） -->
+                        <template v-if="editZoneSel.includes(s.id) && s.type!=='line'">
+                          <rect :x="s.x+s.w-6" :y="s.y+s.h-6" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:se-resize" @mousedown.stop="editZoneStartResize($event,s,'se','pitch')"/>
+                          <rect :x="s.x-4" :y="s.y+s.h-6" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:sw-resize" @mousedown.stop="editZoneStartResize($event,s,'sw','pitch')"/>
+                          <rect :x="s.x+s.w-6" :y="s.y-4" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:ne-resize" @mousedown.stop="editZoneStartResize($event,s,'ne','pitch')"/>
+                          <rect :x="s.x-4" :y="s.y-4" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:nw-resize" @mousedown.stop="editZoneStartResize($event,s,'nw','pitch')"/>
+                        </template>
+                      </g>
+                      <rect v-if="editZoneDraw && editZoneTool.canvas==='pitch'" :x="Math.min(editZoneDraw.x0,editZoneDraw.x1)" :y="Math.min(editZoneDraw.y0,editZoneDraw.y1)" :width="Math.abs(editZoneDraw.x1-editZoneDraw.x0)" :height="Math.abs(editZoneDraw.y1-editZoneDraw.y0)" fill="none" :stroke="editZoneTool.color" stroke-dasharray="4,2" stroke-width="1.5"/>
+                    </svg>
+                  </div>
+                  <!-- 打撃 -->
+                  <div>
+                    <div class="small text-muted mb-1 text-center">打撃</div>
+                    <svg viewBox="0 0 320 320" width="260" height="260" class="zone-canvas"
+                      @mousedown="editZoneMouseDown($event,'bat')"
+                      @mousemove="editZoneMouseMove($event,'bat')"
+                      @mouseup="editZoneMouseUp($event,'bat')"
+                      @mouseleave="editZoneMouseUp($event,'bat')">
+                      <rect x="96" y="64" width="128" height="160" fill="none" stroke="#aaa" stroke-width="1.5" stroke-dasharray="4,3"/>
+                      <g v-for="s in inlinePlayer.zoneShapesBat" :key="s.id" :opacity="s.opacity"
+                         @mousedown.stop="editZoneSelectShape($event,s,'bat')"
+                         :style="{cursor: editZoneSel.includes(s.id) ? 'move' : 'pointer'}">
+                        <rect v-if="s.type==='rect'" :x="s.x" :y="s.y" :width="s.w" :height="s.h" :fill="s.color" :stroke="editZoneSel.includes(s.id)?'#000':s.color" :stroke-width="editZoneSel.includes(s.id)?2:1.5" fill-opacity="0.45"/>
+                        <ellipse v-else-if="s.type==='circle'" :cx="s.x+s.w/2" :cy="s.y+s.h/2" :rx="Math.abs(s.w/2)" :ry="Math.abs(s.h/2)" :fill="s.color" :stroke="editZoneSel.includes(s.id)?'#000':s.color" :stroke-width="editZoneSel.includes(s.id)?2:1.5" fill-opacity="0.45"/>
+                        <polygon v-else-if="s.type==='triangle'" :points="`${s.x+s.w/2},${s.y} ${s.x},${s.y+s.h} ${s.x+s.w},${s.y+s.h}`" :fill="s.color" :stroke="editZoneSel.includes(s.id)?'#000':s.color" :stroke-width="editZoneSel.includes(s.id)?2:1.5" fill-opacity="0.45"/>
+                        <line v-else-if="s.type==='line'" :x1="s.x" :y1="s.y" :x2="s.x+s.w" :y2="s.y+s.h" :stroke="s.color" stroke-width="2.5" stroke-linecap="round"/>
+                        <text v-if="s.label" :x="s.x+s.w/2" :y="s.y+s.h/2+5" text-anchor="middle" font-size="12" :fill="s.color" style="pointer-events:none;user-select:none">{{ s.label }}</text>
+                        <!-- リサイズハンドル（選択中のみ） -->
+                        <template v-if="editZoneSel.includes(s.id) && s.type!=='line'">
+                          <rect :x="s.x+s.w-6" :y="s.y+s.h-6" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:se-resize" @mousedown.stop="editZoneStartResize($event,s,'se','bat')"/>
+                          <rect :x="s.x-4" :y="s.y+s.h-6" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:sw-resize" @mousedown.stop="editZoneStartResize($event,s,'sw','bat')"/>
+                          <rect :x="s.x+s.w-6" :y="s.y-4" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:ne-resize" @mousedown.stop="editZoneStartResize($event,s,'ne','bat')"/>
+                          <rect :x="s.x-4" :y="s.y-4" width="10" height="10" fill="#fff" stroke="#333" stroke-width="1" style="cursor:nw-resize" @mousedown.stop="editZoneStartResize($event,s,'nw','bat')"/>
+                        </template>
+                      </g>
+                      <rect v-if="editZoneDraw && editZoneTool.canvas==='bat'" :x="Math.min(editZoneDraw.x0,editZoneDraw.x1)" :y="Math.min(editZoneDraw.y0,editZoneDraw.y1)" :width="Math.abs(editZoneDraw.x1-editZoneDraw.x0)" :height="Math.abs(editZoneDraw.y1-editZoneDraw.y0)" fill="none" :stroke="editZoneTool.color" stroke-dasharray="4,2" stroke-width="1.5"/>
+                    </svg>
+                  </div>
+                </div>
+                <!-- 選択中の図形の操作 -->
+                <div v-if="editZoneSel.length > 0" class="mt-2 d-flex gap-2 align-items-center flex-wrap">
+                  <span class="small text-muted">選択中: {{ editZoneSel.length }}個</span>
+                  <input type="color" :value="editZoneSelColor" @input="editZoneSetColor($event.target.value)" style="width:32px;height:28px;padding:1px;border:1px solid #ccc;border-radius:4px">
+                  <button class="btn btn-sm btn-outline-danger" @click="editZoneDeleteSel()">削除</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="editZoneSel=[]">選択解除</button>
+                </div>
+              </div>
+
               <div class="col-12 text-end">
                 <button class="btn btn-primary" @click="saveInlineEdit()">{{ i18n.saveBtn }}</button>
               </div>
@@ -630,7 +773,10 @@
 
       <!-- 試合日・スコア画像 -->
       <div class="card p-3 mb-3">
-        <h5>{{ i18n.matchTitle }}</h5>
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <h5 class="mb-0">{{ i18n.matchTitle }}</h5>
+          <a v-if="settings.scheduleUrl" :href="settings.scheduleUrl" target="_blank" class="btn btn-sm btn-outline-secondary">🔗 外部リンク</a>
+        </div>
         <div class="row g-2">
           <div class="col-md-4">
             <label class="form-label">{{ i18n.matchDate }}</label>
@@ -877,6 +1023,19 @@
       });
       if (!res.ok) throw new Error(await res.text());
     }
+    async function sbUploadFile(bucket, path, file) {
+      // まず既存ファイルを削除（upsert）
+      await fetch(`${SUPA_URL}/storage/v1/object/${bucket}/${path}`, {
+        method: 'DELETE', headers: HEADERS
+      }).catch(() => {});
+      const res = await fetch(`${SUPA_URL}/storage/v1/object/${bucket}/${path}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': file.type, 'x-upsert': 'true' },
+        body: file
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return `${SUPA_URL}/storage/v1/object/public/${bucket}/${path}`;
+    }
     // ──────────────────────────────────────────────────────
   </script>
   <script>
@@ -908,7 +1067,7 @@
             furiganaFamily: '', furiganaMiddle: '', furiganaGiven: '',
             number: null, pitchHand: 'R', batHand: 'R',
             positions: [], teamType: 'ICU', school: '',
-            memo: '', videoFile: null, videoUrl: null,
+            memo: '', videoFile: null, videoUrl: null, imageFile: null, imageUrl: null,
             stats: [], zoneShapesPitch: [], zoneShapesBat: []
           },
           positions: ['投手','捕手','一塁手','二塁手','三塁手','遊撃手','左翼手','中堅手','右翼手','指名打者'],
@@ -917,6 +1076,14 @@
           inlineMode: null,
           inlinePlayer: null,
           editPlayer: null,
+          zoneSaveModalVisible: false,
+          editZoneTool: { color: '#e74c3c', opacity: 0.7, canvas: 'pitch' },
+          editZoneSel: [],
+          editZoneDraw: null,
+          editZoneDragging: null,
+          editZoneResizing: null,
+          _editVideoFile: null,
+          _editImageFile: null,
           search: { q: '' },
           searchResults: [],
           newMatch: { id: null, date: '', imageFile: null, imageUrl: null },
@@ -963,6 +1130,12 @@
       },
 
       computed: {
+        editZoneSelColor() {
+          if (!this.inlinePlayer || this.editZoneSel.length === 0) return '#e74c3c';
+          const all = [...(this.inlinePlayer.zoneShapesPitch||[]), ...(this.inlinePlayer.zoneShapesBat||[])];
+          const s = all.find(s => s.id === this.editZoneSel[0]);
+          return s ? s.color : '#e74c3c';
+        },
         i18n() {
           const ja = {
             appTitle:'ICU野球分析（beta）', langLabel:'言語',
@@ -1166,6 +1339,11 @@
           this.newPlayer.videoFile = f;
           this.newPlayer.videoUrl  = URL.createObjectURL(f);
         },
+        onPlayerImageSelected(e) {
+          const f = e.target.files[0]; if (!f) return;
+          this.newPlayer.imageFile = f;
+          this.newPlayer.imageUrl  = URL.createObjectURL(f);
+        },
         addPosition() {
           if (!this.selectedPos) return;
           if (!this.newPlayer.positions) this.newPlayer.positions = [];
@@ -1173,18 +1351,69 @@
             this.newPlayer.positions.push(this.selectedPos);
         },
         removePosition(i) { this.newPlayer.positions.splice(i, 1); },
-        async addPlayer() {
+        showZoneSaveModal() {
           if (!this.newPlayer.nameFamily && !this.newPlayer.nameGiven) {
             alert('名前を入力してください'); return;
           }
+          this.zoneSaveModalVisible = true;
+        },
+
+        // ── ファイルアップロード ──────────────────────────────
+        async uploadPlayerFiles(playerId) {
+          // 動画
+          if (this.newPlayer.videoFile) {
+            try {
+              const ext = this.newPlayer.videoFile.name.split('.').pop();
+              const url = await sbUploadFile('player-media', `${playerId}/video.${ext}`, this.newPlayer.videoFile);
+              this.newPlayer.videoUrl = url;
+            } catch(e) { console.warn('動画アップロード失敗:', e.message); }
+          }
+          // 画像
+          if (this.newPlayer.imageFile) {
+            try {
+              const ext = this.newPlayer.imageFile.name.split('.').pop();
+              const url = await sbUploadFile('player-media', `${playerId}/image.${ext}`, this.newPlayer.imageFile);
+              this.newPlayer.imageUrl = url;
+            } catch(e) { console.warn('画像アップロード失敗:', e.message); }
+          }
+        },
+        async uploadPlayerFilesForEdit(playerId) {
+          // 編集時：inlinePlayerのファイルをアップロード
+          if (this._editVideoFile) {
+            try {
+              const ext = this._editVideoFile.name.split('.').pop();
+              const url = await sbUploadFile('player-media', `${playerId}/video.${ext}`, this._editVideoFile);
+              this.inlinePlayer.videoUrl = url;
+              this._editVideoFile = null;
+            } catch(e) { console.warn('動画アップロード失敗:', e.message); }
+          }
+          if (this._editImageFile) {
+            try {
+              const ext = this._editImageFile.name.split('.').pop();
+              const url = await sbUploadFile('player-media', `${playerId}/image.${ext}`, this._editImageFile);
+              this.inlinePlayer.imageUrl = url;
+              this._editImageFile = null;
+            } catch(e) { console.warn('画像アップロード失敗:', e.message); }
+          }
+        },
+        // ────────────────────────────────────────────────────
+
+        async confirmAddPlayer(saveMode) {
+          this.zoneSaveModalVisible = false;
+          const pid = 'p_' + Date.now();
+          // ファイルアップロード
+          this.toastMessage('ファイルをアップロード中...');
+          await this.uploadPlayerFiles(pid);
           const p = JSON.parse(JSON.stringify(this.newPlayer));
-          p.id       = 'p_' + Date.now();
+          p.id       = pid;
           p.name     = [p.nameFamily, p.nameMiddle, p.nameGiven].filter(Boolean).join(' ');
           p.furigana = [p.furiganaFamily, p.furiganaMiddle, p.furiganaGiven].filter(Boolean).join(' ');
-          p.zoneSavedPitch  = { shapes: JSON.parse(JSON.stringify(this.zoneShapesPitch)), meta: this._editorMetaSnapshot() };
-          p.zoneSavedBat    = { shapes: JSON.parse(JSON.stringify(this.zoneShapesBat)),   meta: this._editorMetaSnapshot() };
-          p.zoneShapesPitch = JSON.parse(JSON.stringify(this.zoneShapesPitch));
-          p.zoneShapesBat   = JSON.parse(JSON.stringify(this.zoneShapesBat));
+          p.zoneShapesPitch = (saveMode === 'both' || saveMode === 'pitch') ? JSON.parse(JSON.stringify(this.zoneShapesPitch)) : [];
+          p.zoneShapesBat   = (saveMode === 'both' || saveMode === 'bat')   ? JSON.parse(JSON.stringify(this.zoneShapesBat))   : [];
+          p.zoneSavedPitch  = { shapes: p.zoneShapesPitch, meta: this._editorMetaSnapshot() };
+          p.zoneSavedBat    = { shapes: p.zoneShapesBat,   meta: this._editorMetaSnapshot() };
+          // videoFile/imageFileはJSONに含めない
+          delete p.videoFile; delete p.imageFile;
           this.players.push(p);
           await sbUpsert('players', { id: p.id, data: p });
           this.newPlayer = {
@@ -1192,7 +1421,7 @@
             furiganaFamily: '', furiganaMiddle: '', furiganaGiven: '',
             number: null, pitchHand: 'R', batHand: 'R',
             positions: [], teamType: 'ICU', school: '',
-            memo: '', videoFile: null, videoUrl: null,
+            memo: '', videoFile: null, videoUrl: null, imageFile: null, imageUrl: null,
             stats: [], zoneShapesPitch: [], zoneShapesBat: []
           };
           this.zoneShapesPitch = []; this.zoneShapesBat = [];
@@ -1200,6 +1429,8 @@
           this.toastMessage('追加されました');
           this.searchResults = this.players.slice();
         },
+
+        async addPlayer() {},
 
         // 検索
         doSearch() {
@@ -1328,6 +1559,109 @@
           if (!inn) return '---';
           return ((s.earnedRuns || 0) * 9 / inn).toFixed(2);
         },
+        // ── 編集パネル内ゾーンエディタ ──────────────────────
+        _editZoneSvgPoint(e, el) {
+          const r = el.getBoundingClientRect();
+          return { x: (e.clientX - r.left) * 320 / r.width, y: (e.clientY - r.top) * 320 / r.height };
+        },
+        _editZoneGetShapes(canvas) {
+          if (!this.inlinePlayer) return [];
+          return canvas === 'pitch' ? (this.inlinePlayer.zoneShapesPitch||[]) : (this.inlinePlayer.zoneShapesBat||[]);
+        },
+        _editZoneFindShape(id) {
+          if (!this.inlinePlayer) return null;
+          return [...(this.inlinePlayer.zoneShapesPitch||[]), ...(this.inlinePlayer.zoneShapesBat||[])].find(s => s.id === id) || null;
+        },
+        editZoneAdd(type) {
+          if (!this.inlinePlayer) return;
+          const arr = this._editZoneGetShapes(this.editZoneTool.canvas);
+          const s = { id:'ez_'+Date.now(), type, x:96, y:64, w:128, h:80, color:this.editZoneTool.color, opacity:this.editZoneTool.opacity, label:'' };
+          arr.push(s);
+        },
+        editZoneMouseDown(e, canvas) {
+          if (!this.inlinePlayer) return;
+          // リサイズ・ドラッグ操作中でなければ新規描画開始
+          if (this.editZoneDragging || this.editZoneResizing) return;
+          const pt = this._editZoneSvgPoint(e, e.currentTarget);
+          this.editZoneTool.canvas = canvas;
+          this.editZoneDraw = { x0:pt.x, y0:pt.y, x1:pt.x, y1:pt.y };
+          this.editZoneSel = [];
+        },
+        editZoneMouseMove(e, canvas) {
+          const pt = this._editZoneSvgPoint(e, e.currentTarget);
+          // ドラッグ移動
+          if (this.editZoneDragging && this.editZoneDragging.canvas === canvas) {
+            const d = this.editZoneDragging;
+            const dx = pt.x - d.lastX, dy = pt.y - d.lastY;
+            d.lastX = pt.x; d.lastY = pt.y;
+            this.editZoneSel.forEach(id => {
+              const s = this._editZoneFindShape(id);
+              if (s) { s.x += dx; s.y += dy; }
+            });
+            return;
+          }
+          // リサイズ
+          if (this.editZoneResizing && this.editZoneResizing.canvas === canvas) {
+            const r = this.editZoneResizing;
+            const s = this._editZoneFindShape(r.id);
+            if (s) {
+              if (r.handle === 'se') { s.w = Math.max(10, pt.x - s.x); s.h = Math.max(10, pt.y - s.y); }
+              else if (r.handle === 'sw') { const rx = s.x+s.w; s.x = Math.min(pt.x, rx-10); s.w = rx - s.x; s.h = Math.max(10, pt.y - s.y); }
+              else if (r.handle === 'ne') { const ry = s.y+s.h; s.y = Math.min(pt.y, ry-10); s.h = ry - s.y; s.w = Math.max(10, pt.x - s.x); }
+              else if (r.handle === 'nw') { const rx = s.x+s.w, ry = s.y+s.h; s.x = Math.min(pt.x,rx-10); s.y = Math.min(pt.y,ry-10); s.w = rx-s.x; s.h = ry-s.y; }
+            }
+            return;
+          }
+          // 新規描画プレビュー
+          if (this.editZoneDraw && this.editZoneTool.canvas === canvas) {
+            this.editZoneDraw.x1 = pt.x; this.editZoneDraw.y1 = pt.y;
+          }
+        },
+        editZoneMouseUp(e, canvas) {
+          if (this.editZoneDragging) { this.editZoneDragging = null; return; }
+          if (this.editZoneResizing) { this.editZoneResizing = null; return; }
+          if (!this.editZoneDraw || this.editZoneTool.canvas !== canvas || !this.inlinePlayer) return;
+          const d = this.editZoneDraw;
+          const w = d.x1 - d.x0, h = d.y1 - d.y0;
+          if (Math.abs(w) > 8 && Math.abs(h) > 8) {
+            const arr = this._editZoneGetShapes(canvas);
+            arr.push({ id:'ez_'+Date.now(), type:'rect', x:Math.min(d.x0,d.x1), y:Math.min(d.y0,d.y1), w:Math.abs(w), h:Math.abs(h), color:this.editZoneTool.color, opacity:this.editZoneTool.opacity, label:'' });
+          }
+          this.editZoneDraw = null;
+        },
+        editZoneSelectShape(e, s, canvas) {
+          e.stopPropagation();
+          this.editZoneTool.canvas = canvas;
+          if (e.shiftKey) {
+            const i = this.editZoneSel.indexOf(s.id);
+            if (i === -1) this.editZoneSel.push(s.id); else this.editZoneSel.splice(i,1);
+          } else {
+            if (!this.editZoneSel.includes(s.id)) this.editZoneSel = [s.id];
+          }
+          // ドラッグ開始
+          const pt = this._editZoneSvgPoint(e, e.currentTarget.closest('svg'));
+          this.editZoneDragging = { canvas, lastX: pt.x, lastY: pt.y };
+          this.editZoneDraw = null;
+        },
+        editZoneStartResize(e, s, handle, canvas) {
+          e.stopPropagation();
+          this.editZoneResizing = { id: s.id, handle, canvas };
+          this.editZoneDraw = null;
+        },
+        editZoneDeleteSel() {
+          if (!this.inlinePlayer) return;
+          this.inlinePlayer.zoneShapesPitch = (this.inlinePlayer.zoneShapesPitch||[]).filter(s => !this.editZoneSel.includes(s.id));
+          this.inlinePlayer.zoneShapesBat   = (this.inlinePlayer.zoneShapesBat||[]).filter(s => !this.editZoneSel.includes(s.id));
+          this.editZoneSel = [];
+        },
+        editZoneSetColor(color) {
+          if (!this.inlinePlayer) return;
+          [...(this.inlinePlayer.zoneShapesPitch||[]), ...(this.inlinePlayer.zoneShapesBat||[])].forEach(s => {
+            if (this.editZoneSel.includes(s.id)) s.color = color;
+          });
+        },
+        // ──────────────────────────────────────────────────
+
         openInlineView(p) {
           this.inlinePlayer = Object.assign({}, p);
           this.inlineMode   = 'view';
@@ -1354,9 +1688,15 @@
           if (!this.inlinePlayer) return;
           const idx = this.players.findIndex(p => p.id === this.inlinePlayer.id);
           if (idx === -1) return;
+          // ファイルアップロード
+          if (this._editVideoFile || this._editImageFile) {
+            this.toastMessage('ファイルをアップロード中...');
+            await this.uploadPlayerFilesForEdit(this.inlinePlayer.id);
+          }
           const updated = JSON.parse(JSON.stringify(this.inlinePlayer));
           updated.name     = [updated.nameFamily, updated.nameMiddle, updated.nameGiven].filter(Boolean).join(' ');
           updated.furigana = [updated.furiganaFamily, updated.furiganaMiddle, updated.furiganaGiven].filter(Boolean).join(' ');
+          delete updated.videoFile; delete updated.imageFile;
           this.players.splice(idx, 1, updated);
           await sbUpsert('players', { id: updated.id, data: updated });
           this.searchResults = this.searchResults.map(p => p.id === updated.id ? updated : p);
