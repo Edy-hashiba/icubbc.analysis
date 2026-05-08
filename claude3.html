@@ -1796,11 +1796,18 @@
             if (!this.selectedIds.includes(s.id) || this.selectedCanvas !== canvas) {
               this.selectedIds = [s.id]; this.selectedCanvas = canvas;
             }
-            const svgRef = canvas === 'pitch' ? this.$refs.svgPitch : this.$refs.svgBat;
-            const rect   = svgRef.getBoundingClientRect();
+            const svgRef  = canvas === 'pitch' ? this.$refs.svgPitch : this.$refs.svgBat;
+            const panKey  = canvas === 'pitch' ? 'pitchPan'   : 'batPan';
+            const scaleKey= canvas === 'pitch' ? 'pitchScale' : 'batScale';
+            const rect    = svgRef.getBoundingClientRect();
+            const scale   = this[scaleKey] || 1;
+            const pan     = this[panKey]   || { x: 0, y: 0 };
+            // SVG内座標に変換（pan・scaleを考慮）
+            const svgX = (touch.clientX - rect.left - pan.x) / scale;
+            const svgY = (touch.clientY - rect.top  - pan.y) / scale;
             this.dragging     = true;
-            this.dragOffset.x = touch.clientX - rect.left - s.x;
-            this.dragOffset.y = touch.clientY - rect.top  - s.y;
+            this.dragOffset.x = svgX - s.x;
+            this.dragOffset.y = svgY - s.y;
           } else if (e.touches && e.touches.length > 1) {
             this.onTouchStart(e, canvas);
           }
@@ -1983,7 +1990,56 @@
           const svgRef   = canvas === 'pitch' ? this.$refs.svgPitch : this.$refs.svgBat;
           if (!svgRef) return;
           const rect = svgRef.getBoundingClientRect();
-          const st   = this[stateKey]; if (!st) return;
+          // ── ドラッグ移動 ──
+          if (this.dragging && this.selectedIds.length > 0 && this.selectedCanvas === canvas && e.touches.length === 1) {
+            const touch  = e.touches[0];
+            const panKey  = canvas === 'pitch' ? 'pitchPan'   : 'batPan';
+            const scaleKey= canvas === 'pitch' ? 'pitchScale' : 'batScale';
+            const scale  = this[scaleKey] || 1;
+            const pan    = this[panKey]   || { x: 0, y: 0 };
+            const x = (touch.clientX - rect.left - pan.x) / scale;
+            const y = (touch.clientY - rect.top  - pan.y) / scale;
+            const arr   = canvas === 'pitch' ? this.zoneShapesPitch : this.zoneShapesBat;
+            const first = arr.find(z => z.id === this.selectedIds[0]);
+            if (!first) return;
+            const dx = (x - this.dragOffset.x) - first.x;
+            const dy = (y - this.dragOffset.y) - first.y;
+            this.selectedIds.forEach(id => {
+              const shape = arr.find(z => z.id === id);
+              if (!shape) return;
+              shape.x += dx; shape.y += dy;
+              if (shape.type === 'line') { shape.x2 += dx; shape.y2 += dy; }
+            });
+            this.dragOffset.x = x - first.x;
+            this.dragOffset.y = y - first.y;
+            this.persistShapes();
+            return;
+          }
+          // ── リサイズ ──
+          if (this.resizing && this.resizeTarget && this.resizeTarget.canvas === canvas && e.touches.length === 1) {
+            const touch  = e.touches[0];
+            const panKey  = canvas === 'pitch' ? 'pitchPan'   : 'batPan';
+            const scaleKey= canvas === 'pitch' ? 'pitchScale' : 'batScale';
+            const scale  = this[scaleKey] || 1;
+            const pan    = this[panKey]   || { x: 0, y: 0 };
+            const x = (touch.clientX - rect.left - pan.x) / scale;
+            const y = (touch.clientY - rect.top  - pan.y) / scale;
+            const s = this.resizeTarget.shape;
+            const nx = x - s.x;
+            const ny = y - s.y;
+            if (s.type === 'circle') {
+              s.r  = Math.max(6, Math.max(nx, ny) / 2);
+              s.cx = s.r; s.cy = s.r;
+            } else {
+              s.w  = Math.max(10, nx);
+              s.h  = Math.max(10, ny);
+              s.cx = s.w / 2; s.cy = s.h / 2;
+            }
+            this.persistShapes();
+            return;
+          }
+          // ── パン・ピンチ ──
+          const st = this[stateKey]; if (!st) return;
           if (st.mode === 'pinch' && e.touches.length === 2) {
             const t0 = e.touches[0], t1 = e.touches[1];
             const newScale = Math.max(0.3, Math.min(4, st.startScale * (Math.hypot(t1.clientX-t0.clientX, t1.clientY-t0.clientY) / st.startDist)));
@@ -2000,6 +2056,9 @@
           }
         },
         onTouchEnd(e, canvas) {
+          this.dragging = false;
+          this.resizing = false;
+          this.resizeTarget = null;
           this[canvas === 'pitch' ? 'pitchTouchState' : 'batTouchState'] = null;
         },
 
