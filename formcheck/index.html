@@ -68,7 +68,17 @@ body.m-overlay .ov-only{display:inline-grid!important}
 .hb{padding:4px 9px;font-size:12px;border-radius:7px;flex:0 0 auto}
 @media (max-width:400px){#tools{gap:2px;padding:5px 4px}#tools .ib.lab{min-width:33px;padding:3px 2px}.brand{display:none}
   body.m-overlay #tools .ib.lab{min-width:30px;padding:3px 1px}}
-@media (max-width:480px){body.m-side .stage-head [data-pose]{display:none}}
+@media (max-width:480px){body.m-side .stage-head .posebox{display:none}}
+.posebox{display:inline-flex;align-items:center;flex:0 0 auto}
+.posebox .angsw{display:none;align-items:center;gap:4px;padding:3px 6px 3px 5px;font-size:11px;border-radius:0 7px 7px 0;margin-left:-1px;flex:0 0 auto}
+.posebox.on [data-pose]{border-radius:7px 0 0 7px}
+.posebox.on .angsw{display:inline-flex}
+.posebox .angsw.on{background:var(--panel2);color:var(--text);border-color:var(--line)}
+.angsw .tgl{position:relative;width:28px;height:16px;border-radius:8px;background:#3a4452;transition:background .18s;flex:0 0 28px}
+.angsw .tgl i{position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.5);transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.angsw.on .tgl{background:var(--accent)}
+.angsw.on .tgl i{transform:translateX(12px)}
+@media (prefers-reduced-motion:reduce){.angsw .tgl,.angsw .tgl i{transition:none}}
 #trackBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 8px;background:#1d2410;border-top:1px solid #3c4a1c;font-size:12px}
 #trackBar .hint{flex:1;min-width:90px;color:#d9e6b8}
 #trackBar .cnt{color:var(--muted)}
@@ -218,7 +228,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:12px}
   <section class="stage active" id="stage0">
     <div class="stage-head" data-clip="A">
       <span class="tag tA">A</span><span class="name" id="nameA">未選択</span>
-      <button class="hb" data-pose="A" title="骨格の自動検出">骨格</button>
+      <span class="posebox" data-posebox="A"><button class="hb" data-pose="A" title="骨格の自動検出">骨格</button><button class="hb angsw" data-ang="A" role="switch" aria-checked="false" title="骨格の角度を表示（タップ／左右にスワイプ）"><span>角度</span><span class="tgl"><i></i></span></button></span>
       <button class="hb ov-only" data-move="A" title="Aを動かす（ドラッグで移動・ピンチ/ホイールで拡大縮小。もう一度押すと終了）">移動</button>
       <button class="ib" data-menu="A" data-icon="more" title="Aのメニュー（読込・反転など）" aria-label="Aのメニュー"></button>
     </div>
@@ -231,7 +241,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:12px}
   <section class="stage" id="stage1">
     <div class="stage-head" data-clip="B">
       <span class="tag tB">B</span><span class="name" id="nameB">未選択</span>
-      <button class="hb" data-pose="B" title="骨格の自動検出">骨格</button>
+      <span class="posebox" data-posebox="B"><button class="hb" data-pose="B" title="骨格の自動検出">骨格</button><button class="hb angsw" data-ang="B" role="switch" aria-checked="false" title="骨格の角度を表示（タップ／左右にスワイプ）"><span>角度</span><span class="tgl"><i></i></span></button></span>
       <button class="hb ov-only" data-move="B" title="Bを動かす（ドラッグで移動・ピンチ/ホイールで拡大縮小。もう一度押すと終了）">移動</button>
       <button class="ib" data-menu="B" data-icon="more" title="Bのメニュー（読込・反転など）" aria-label="Bのメニュー"></button>
     </div>
@@ -348,7 +358,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:12px}
       <li><b>スロー動画</b>: スロー撮影を通常速度で書き出した動画は、マーカー画面の「時間計算fps」に撮影fps（例: 240）を入れると実際の秒数になります。</li>
       <li><b>保存</b>: 上の「保存」で名前を付けて保存。図形・マーカー・同期・骨格の修正が残ります。直前の作業は自動保存。</li>
       <li><b>バットの軌跡</b>: ツールの「軌跡」を押すと、すぐに自動で描き始めます（A・B 横の「⋮」→「バットの軌跡を自動で描く」でも可）。体の位置から自動でバットの先端を探して軌跡を描きます。ずれたコマは「軌跡」ツールで先端をタップして直し、もう一度「自動で描く」（タップした点は正解として使われます）。マーカーが2つ以上あるとその範囲を、無いときは手が一番速く動いた前後（スイング部分）を描きます。骨格のON/OFFとは関係なく使えます。</li>
-      <li><b>骨格</b>: 初回はモデル（約9MB）をダウンロード。</li>
+      <li><b>骨格</b>: 初回はモデル（約9MB）をダウンロード。ONにすると骨格ボタンの中に「角度」スイッチが出ます（最初はOFF）。タップか左右スワイプでひじ・ひざの角度を表示。</li>
     </ul>
     <details open>
       <summary>設定</summary>
@@ -471,7 +481,7 @@ const DB = (() => {
 const S = {
   mode: 'single', tool: 'select', color: COLORS[0], widthIdx: 1,
   linked: false, offset: 0, pendingLink: null, active: 'A', rate: 1, loop: false,
-  angles: LS.get('angles', true), trail: true, trackAdv: LS.get('trackAdv', true), aAlpha: 1, bAlpha: 0.5, mixPos: 0.5,
+  trail: true, trackAdv: LS.get('trackAdv', true), aAlpha: 1, bAlpha: 0.5, mixPos: 0.5,
   model: LS.get('model', 'full'), preset: LS.get('preset', 'bat'),
   storeVideos: LS.get('storeVideos', true), sessionId: null, sessionName: '', moveTarget: 'B'
 };
@@ -486,11 +496,13 @@ function makeClip(id) {
   const c = { id, v, sc, name: '', url: null, fps: 30, fpsEst: null, fpsAuto: true, timeFps: null, mirror: false, pose: false,
     poseCache: new Map(), track: new Map(), tainted: false, loaded: false, place: { s: 1, tx: 0, ty: 0 }, markers: [],
     blob: null, src: null, videoStored: false, pendingRestore: null, relink: null, status: '', dlToken: 0,
-    fcache: new Map(), want: null, pending: false };
+    fcache: new Map(), want: null, pending: false, angles: false };
   v.addEventListener('loadedmetadata', () => { c.loaded = true; c.status = ''; applyCss(); updateUI(); });
   v.addEventListener('loadeddata', () => { if (c.fpsEst == null) estimateFps(c); });
   v.addEventListener('timeupdate', () => dirty = true);
   v.addEventListener('seeked', () => {
+    // skeleton on: detect the frame just reached before moving on, so the skeleton keeps up while you scrub fast
+    if (c.pose && LM && !c.tainted && !batJob && !analyzing) { const f = Math.max(0, Math.floor(v.currentTime * c.fps + 1e-4)); if (!c.poseCache.has(f)) { detectInto(c, f); dirty = true; } }
     // seeks are queued: only the newest requested position is sent once the previous seek has finished
     if (c.pending) { c.pending = false; if (Math.abs(v.currentTime - c.want) > 1e-4) { v.currentTime = c.want; return; } }
     dirty = true;
@@ -513,25 +525,36 @@ const ST = [makeStage(0), makeStage(1)];
 ST[0].wrap.append(A.v, A.sc);
 ST[1].wrap.append(B.v, B.sc);
 
-// ---------- smooth scrubbing: frames already shown are kept as small pictures (recent ones, memory-capped) ----------
-const FC = { max: ((navigator.deviceMemory || 8) <= 4 ? 64 : 160) * 1048576, bytes: 0 };
+// ---------- smooth scrubbing: frames are kept as small pictures, shown instantly while the video is still seeking ----------
+// Phones seek slowly, so pictures are prepared ahead in the background (see prefetch). They are smaller on phones to fit memory;
+// the real (sharp) frame replaces the picture as soon as you stop.
+const PHONE = /iPhone|iPad|iPod|Android|Mobi/i.test(navigator.userAgent);
+const FC = { max: (PHONE ? 96 : (navigator.deviceMemory || 8) <= 4 ? 96 : 200) * 1048576, bytes: 0, scale: PHONE ? .6 : 1 };
 const stageOf = c => (c === B && S.mode !== 'overlay') ? ST[1] : ST[0];
-function fcStore(c, f = frameIdx(c)) {
-  if (!c.loaded || c.v.readyState < 2 || c.fcache.has(f)) return;
-  const r = contentRect(c, stageOf(c)), w = Math.max(2, Math.round(r.w)), h = Math.max(2, Math.round(r.h));
+function picSize(c) { const r = contentRect(c, stageOf(c)); return [Math.max(2, Math.round(r.w * FC.scale)), Math.max(2, Math.round(r.h * FC.scale))]; }
+function fcStore(c, f = frameIdx(c), src = c.v) {
+  if (!c.loaded || src.readyState < 2 || c.fcache.has(f)) return;
+  const [w, h] = picSize(c);
   const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  try { cv.getContext('2d').drawImage(c.v, 0, 0, w, h); } catch (e) { return; }
+  try { cv.getContext('2d').drawImage(src, 0, 0, w, h); } catch (e) { return; }
   c.fcache.set(f, cv); FC.bytes += w * h * 4;
-  while (FC.bytes > FC.max) { // drop the oldest pictures first
-    const o = A.fcache.size >= B.fcache.size ? A : B, k = o.fcache.keys().next().value; if (k === undefined) break;
-    const old = o.fcache.get(k); FC.bytes -= old.width * old.height * 4; o.fcache.delete(k);
+  while (FC.bytes > FC.max) { // over the limit: drop the picture farthest from where that video currently is
+    const o = A.fcache.size >= B.fcache.size ? A : B, cur = frameIdx(o); let far = null, fd = -1;
+    for (const k of o.fcache.keys()) { const d = Math.abs(k - cur); if (d > fd) { fd = d; far = k; } }
+    if (far === null) break;
+    const old = o.fcache.get(far); FC.bytes -= old.width * old.height * 4; o.fcache.delete(far);
   }
 }
 function fcClear(c) { for (const cv of c.fcache.values()) FC.bytes -= cv.width * cv.height * 4; c.fcache.clear(); hideScrub(c); }
+function fcNear(c, f) { // the frame itself, or the closest prepared one within a couple of frames
+  if (c.fcache.has(f)) return c.fcache.get(f);
+  const r = Math.max(2, Math.round(c.fps / 15));
+  for (let d = 1; d <= r; d++) { if (c.fcache.has(f - d)) return c.fcache.get(f - d); if (c.fcache.has(f + d)) return c.fcache.get(f + d); }
+  return null;
+}
 function showScrub(c, f) {
-  const pic = c.fcache.get(f);
-  if (!pic) { hideScrub(c); return; } // not remembered: let the video itself show it when its seek finishes
-  c.fcache.delete(f); c.fcache.set(f, pic); // mark as recently used
+  const pic = fcNear(c, f);
+  if (!pic) { hideScrub(c); return; } // nothing prepared nearby: let the video itself show it when its seek finishes
   const st = stageOf(c), r = contentRect(c, st), sc = c.sc;
   if (sc.width !== Math.round(st.w) || sc.height !== Math.round(st.h)) { sc.width = Math.round(st.w); sc.height = Math.round(st.h); }
   const ctx = sc.getContext('2d'); ctx.clearRect(0, 0, sc.width, sc.height); ctx.drawImage(pic, r.x, r.y, r.w, r.h);
@@ -706,7 +729,18 @@ function drawShape(ctx, st, sh, lw, sel) {
 }
 
 function frameIdx(c) { const t = c.pending && c.want != null ? c.want : c.v.currentTime; return Math.max(0, Math.floor(t * c.fps + 1e-4)); } // a queued seek counts as already there
-const poseAt = c => c.poseCache.get(frameIdx(c));
+const poseAt = c => c.poseCache.get(frameIdx(c)); // exactly this frame (used when dragging joints)
+// for display: this frame, or blended from the nearest analysed frames, so the skeleton doesn't blink out while scrubbing fast
+function poseFor(c, f = frameIdx(c)) {
+  const ex = c.poseCache.get(f); if (ex) return ex;
+  const R = Math.max(3, Math.round(c.fps / 5)); let a = null, b = null;
+  for (let d = 1; d <= R && (a == null || b == null); d++) { if (a == null && c.poseCache.get(f - d)) a = f - d; if (b == null && c.poseCache.get(f + d)) b = f + d; }
+  if (a != null && b != null) {
+    const la = c.poseCache.get(a), lb = c.poseCache.get(b), r = (f - a) / (b - a);
+    return la.map((p, i) => ({ x: p.x + (lb[i].x - p.x) * r, y: p.y + (lb[i].y - p.y) * r, v: Math.min(p.v, lb[i].v) }));
+  }
+  return a != null ? c.poseCache.get(a) : b != null ? c.poseCache.get(b) : null;
+}
 const clipColor = c => c === A ? '#ff5d73' : '#3cc8ff';
 
 // bat-head path: points tapped / auto-tracked per frame (independent of the skeleton)
@@ -746,7 +780,7 @@ function drawTrack(ctx, st, c, lw) {
   ctx.restore();
 }
 function drawPose(ctx, st, c, lw) {
-  const lm = poseAt(c); if (!lm) return;
+  const lm = poseFor(c); if (!lm) return;
   const col = clipColor(c), P = i => clipToStage(c, st, lm[i].x, lm[i].y);
   ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.lineWidth = 3 * lw;
   for (const [i, j] of EDGES) {
@@ -757,7 +791,7 @@ function drawPose(ctx, st, c, lw) {
   ctx.globalAlpha = .8; ctx.beginPath(); ctx.moveTo(mid[0], mid[1]); ctx.lineTo(nose[0], nose[1]); ctx.stroke();
   for (const i of PTS) { ctx.globalAlpha = lm[i].v < .5 ? .4 : 1; dot(ctx, P(i), (i === 0 ? 5 : 4) * lw, '#fff', col, lw); }
   ctx.globalAlpha = 1;
-  if (S.angles) for (const [a, b, cc] of POSE_ANG) {
+  if (c.angles) for (const [a, b, cc] of POSE_ANG) { // angle labels: off until the 角度 switch is turned on
     if (Math.min(lm[a].v, lm[b].v, lm[cc].v) < .4) continue;
     const pa = P(a), pb = P(b), pc = P(cc), { deg } = angleDeg(pa, pb, pc);
     const u1 = [pa[0] - pb[0], pa[1] - pb[1]], u2 = [pc[0] - pb[0], pc[1] - pb[1]];
@@ -1048,7 +1082,7 @@ function finishLoad(c) {
   c.markers = (r.markers || []).map(m => ({ ...m }));
   c.poseCache = new Map(r.fps === c.fps ? (r.pose || []) : []);
   c.track = new Map(r.track || []); if (r.fps && r.fps !== c.fps) remapTrack(c, r.fps);
-  c.pose = !!r.poseOn && !c.tainted;
+  c.pose = !!r.poseOn && !c.tainted; c.angles = !!r.angles;
   if (c.pose) getLM().catch(() => {});
   seek(c, r.time || 0);
   tryLink(); applyCss(); updateUI();
@@ -1082,6 +1116,7 @@ function clearClip(c) {
   Object.assign(c, { loaded: false, name: '', blob: null, src: null, markers: [], relink: null, pendingRestore: null,
     videoStored: false, fpsEst: null, fpsAuto: true, fps: 30, timeFps: null, status: '', tainted: false, place: { s: 1, tx: 0, ty: 0 } });
   c.poseCache = new Map(); c.track = new Map(); trackUndo = trackUndo.filter(u => u.c !== c); fcClear(c); c.pending = false; S.linked = false;
+  if (c.hv) { c.hv.removeAttribute('src'); c.hv.load(); c.hv.dataset.src = ''; }
   applyCss(); updateUI();
 }
 let fileTarget = 'A';
@@ -1272,9 +1307,9 @@ function pickPose(c, f, list, fresh) {
   }
   return list.reduce((a, b) => height(b) > height(a) ? b : a);
 }
-function detectInto(c, f, fresh) { // fresh: first frame after a camera cut (don't match people from the previous shot)
+function detectInto(c, f, fresh, src = c.v) { // fresh: first frame after a camera cut (don't match people from the previous shot)
   try {
-    const r = LM.detect(c.v), l = pickPose(c, f, r.landmarks, fresh);
+    const r = LM.detect(src), l = pickPose(c, f, r.landmarks, fresh);
     c.poseCache.set(f, l ? l.map(p => ({ x: p.x, y: p.y, v: p.visibility == null ? 1 : p.visibility })) : null);
   } catch (e) {
     console.warn(e);
@@ -1294,6 +1329,62 @@ function seekAwait(v, t) {
   return new Promise(res => { let done = false; const fin = () => { if (!done) { done = true; v.removeEventListener('seeked', fin); res(); } };
     v.addEventListener('seeked', fin); v.currentTime = t; setTimeout(fin, 3000); });
 }
+
+// ---------- background preparation ----------
+// A hidden copy of each open video walks the frames nearest to where you are first, preparing frame pictures
+// (instant scrubbing, especially on phones) and, while 骨格 is on, the skeleton of every frame.
+// It pauses whenever you play, drag or tap, and while the bat path is being made.
+const PF = { busyUntil: 0, running: false };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown'])
+  window.addEventListener(ev, e => { if (ev !== 'pointermove' || e.buttons) PF.busyUntil = performance.now() + 450; }, { passive: true, capture: true });
+function pfVideo(c) {
+  if (!c.hv) {
+    const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
+    v.style.cssText = 'position:fixed;left:-9999px;top:0;width:4px;height:4px;opacity:0;pointer-events:none';
+    document.body.appendChild(v); c.hv = v;
+  }
+  if (c.hv.dataset.src !== (c.url || '')) { c.hv.dataset.src = c.url || ''; if (c.url) c.hv.src = c.url; else { c.hv.removeAttribute('src'); c.hv.load(); } }
+  return c.hv;
+}
+const pfReady = v => v.readyState >= 2 ? Promise.resolve() : new Promise(r => {
+  const d = () => { v.removeEventListener('loadeddata', d); r(); }; v.addEventListener('loadeddata', d); setTimeout(d, 5000);
+});
+function pfNext() { // per video: the nearest frame still missing a picture (within the memory budget) or a skeleton
+  let best = null;
+  const both = A.loaded && B.loaded && S.mode !== 'single';
+  for (const c of [A, B]) {
+    if (!c.loaded || c.tainted || !c.url || !isShown(c) || c.pendingRestore) continue;
+    const N = totalFrames(c), cur = frameIdx(c), [w, h] = picSize(c);
+    const picRange = Math.floor(FC.max * .85 / (w * h * 4) / (both ? 2 : 1) / 2), wantPose = c.pose && !!LM;
+    for (let d = 0; d < N && (!best || d < best.d); d++) {
+      const hit = (d ? [cur + d, cur - d] : [cur]).find(f => f >= 0 && f < N &&
+        ((d <= picRange && !c.fcache.has(f)) || (wantPose && !c.poseCache.has(f))));
+      if (hit != null) { best = { c, f: hit, d }; break; }
+      if (d > picRange && !wantPose) break;
+    }
+  }
+  return best;
+}
+async function pfLoop() {
+  if (PF.running) return; PF.running = true;
+  try {
+    for (;;) {
+      if (document.hidden || batJob || analyzing || !A.v.paused || !B.v.paused || performance.now() < PF.busyUntil) { await sleep(250); continue; }
+      const j = pfNext(); if (!j) break;
+      const v = pfVideo(j.c); await pfReady(v);
+      if (v.dataset.src !== j.c.url) continue;
+      await seekAwait(v, (j.f + .5) / j.c.fps);
+      if (v.dataset.src !== j.c.url || !j.c.loaded) continue;
+      fcStore(j.c, j.f, v);
+      if (j.c.pose && LM && !j.c.poseCache.has(j.f)) { detectInto(j.c, j.f, false, v); dirty = true; await sleep(4); }
+      else await sleep(0);
+    }
+  } catch (e) { console.warn(e); }
+  finally { PF.running = false; }
+}
+setInterval(() => { if (!PF.running) pfLoop(); }, 1000);
 async function analyzeAll(c) {
   if (analyzing) { analyzing.cancel = true; return; }
   if (!c.loaded || c.tainted) return;
@@ -1320,7 +1411,7 @@ function remapTrack(c, oldFps) {
 }
 const AN = { cv: document.createElement('canvas') };
 function grabGray(c) {
-  const v = c.v, k = Math.min(1, 480 / Math.max(v.videoWidth, v.videoHeight));
+  const v = c.v, k = Math.min(1, 480 / Math.max(v.videoWidth, v.videoHeight)); // analysis size (720 was tried: it picked up fence/bench lines)
   const w = Math.max(1, Math.round(v.videoWidth * k)), h = Math.max(1, Math.round(v.videoHeight * k));
   if (AN.cv.width !== w || AN.cv.height !== h) { AN.cv.width = w; AN.cv.height = h; AN.ctx = null; }
   const ctx = AN.ctx || (AN.ctx = AN.cv.getContext('2d', { willReadFrequently: true }));
@@ -1353,7 +1444,7 @@ function poseGeom(lm, img) {
   const Lh = avg([15, 17, 19]), Rh = avg([16, 18, 20]), H = mid(Lh, Rh);
   const T = dist(mid(P(11), P(12)), mid(P(23), P(24)));
   const hv = Math.min(...[15, 16, 17, 18, 19, 20].map(i => lm[i].v));
-  return T >= 8 ? { H, T, E: [P(13), P(14)], Lh, Rh, hv } : null;
+  return T >= 8 ? { H, T, E: [P(13), P(14)], Sh: [P(11), P(12)], Hp: [P(23), P(24)], Lh, Rh, hv } : null;
 }
 // For each direction, looks for a thin straight line passing NEAR the hands (the pose's hand points are a few
 // pixels off the bat axis, so lines are also tried at small sideways offsets O). "Thin line" = darker (or brighter)
@@ -1362,7 +1453,7 @@ function batScan(img, mot, g) {
   const { H, T, E } = g, P = new Float32Array(BK * BS), S = new Float32Array(BK), O = new Float32Array(BK);
   const off = Math.max(3, .09 * T);                     // side-sample distance (a bit more than the barrel's radius)
   const lat = Math.max(4, .16 * T), lstep = lat / 4;    // sideways offsets tried
-  const elbowAng = E.map(e => Math.atan2(e[1] - H[1], e[0] - H[0]));
+  const elbows = E.map((e, i) => ({ a: Math.atan2(e[1] - H[1], e[0] - H[0]), d: Math.hypot(e[0] - H[0], e[1] - H[1]), sh: g.Sh ? g.Sh[i] : null }));
   const line = (x, y, nx, ny) => {
     const c = sampleG(img, x, y), l = sampleG(img, x + nx, y + ny), r = sampleG(img, x - nx, y - ny);
     if (!(c === c && l === l && r === r)) return 0;
@@ -1377,12 +1468,22 @@ function batScan(img, mot, g) {
   const robust = a => { a.sort(); let s = 0; const n = Math.max(1, Math.round(a.length * .6)); for (let i = a.length - n; i < a.length; i++) s += a[i]; return s / n; };
   for (let k = 0; k < BK; k++) {
     const th = k * 2 * Math.PI / BK, ux = Math.cos(th), uy = Math.sin(th), px = -uy, py = ux, nx = px * off, ny = py * off;
+    // toward an elbow the first stretch is the forearm, not the bat: only what continues beyond the elbow counts there
+    // (the bat can line up with the lead forearm mid-swing, so the direction itself must not be ruled out)
+    let skipTo = 0;
+    // …unless the line runs on through the shoulder too: then it is the whole arm (e.g. arms raised in the follow-through)
+    let armLine = false;
+    for (const e of elbows) {
+      let dd = Math.abs(th - e.a) % (2 * Math.PI); if (dd > Math.PI) dd = 2 * Math.PI - dd; if (dd >= .5) continue;
+      skipTo = Math.max(skipTo, e.d + .1 * T);
+      if (e.sh) { const vx = e.sh[0] - H[0], vy = e.sh[1] - H[1], along = vx * ux + vy * uy, perp = Math.abs(vx * uy - vy * ux); if (along > e.d && perp < .3 * T) armLine = true; }
+    }
     let best = -1, bo = 0;
     for (let o = -lat; o <= lat + 1e-6; o += lstep) {
       const ox = H[0] + px * o, oy = H[1] + py * o;
       for (let s = s0; s <= s1; s++) {
         const d = T * bdAt(s);
-        fw[s - s0] = line(ox + ux * d, oy + uy * d, nx, ny);
+        fw[s - s0] = d < skipTo ? 0 : line(ox + ux * d, oy + uy * d, nx, ny);
         if (s <= b1) bk[s - s0] = line(ox - ux * d, oy - uy * d, nx, ny); // the bat ENDS at the hands; a background line runs on through them
       }
       const sc = Math.max(0, robust(fw) - .8 * robust(bk)) * (1 - .15 * Math.abs(o) / lat); // slightly prefer lines through the hands
@@ -1390,25 +1491,60 @@ function batScan(img, mot, g) {
     }
     const ox = H[0] + px * bo, oy = H[1] + py * bo;
     for (let s = 0; s < BS; s++) { const d = T * bdAt(s); P[k * BS + s] = line(ox + ux * d, oy + uy * d, nx, ny); }
-    for (const ea of elbowAng) { let dd = Math.abs(th - ea) % (2 * Math.PI); if (dd > Math.PI) dd = 2 * Math.PI - dd; if (dd < .5) best *= .3; } // not along the forearms
+    if (armLine) best *= .3; // hand → elbow → shoulder in one line: an arm, not the bat
+    { // a bat ends at ~1.6 torso lengths: a line that keeps going well past that (body, legs, background) is less likely the bat
+      let mid = 0, mn = 0, tail = 0, tn = 0;
+      for (let s = 0; s < BS; s++) { const dT = bdAt(s), v = P[k * BS + s]; if (dT >= .6 && dT <= 1.4) { mid += v; mn++; } else if (dT >= 1.95) { tail += v; tn++; } }
+      const ratio = (tail / Math.max(1, tn)) / (mid / Math.max(1, mn) + 1e-6);
+      best *= clamp(1 - (ratio - .6) * 1.25, .4, 1);
+    }
     S[k] = best; O[k] = bo;
   }
   let max = 0; for (let k = 0; k < BK; k++) if (S[k] > max) max = S[k];
   return { P, S, O, max };
 }
-function tipDist(P, k) { // where the line ends along direction k, in torso lengths (ok=false: too faint to tell)
-  const base = [];
-  for (let s = 0; s < BS; s++) { const d = bdAt(s); if (d >= .3 && d <= 1) base.push(P[k * BS + s]); }
+function tipDistArr(p) { // where the line ends along a profile sampled over [BD0, BD1] torso lengths (ok=false: too faint to tell)
+  const n = p.length, at = s => BD0 + (BD1 - BD0) * s / (n - 1), base = [];
+  for (let s = 0; s < n; s++) { const d = at(s); if (d >= .3 && d <= 1) base.push(p[s]); }
   base.sort((a, b) => a - b);
   const med = base[base.length >> 1] || 0;
   if (med < 3) return { d: 1.6, ok: false };
-  const thr = .4 * med, maxGap = 4;
+  const thr = .4 * med, maxGap = Math.round(4 * (n - 1) / (BS - 1));
   let last = 0, gap = 0;
-  for (let s = 0; s < BS; s++) {
-    if (P[k * BS + s] >= thr) { last = s; gap = 0; }
-    else if (++gap > maxGap && bdAt(s) > 1) break;
+  for (let s = 0; s < n; s++) {
+    if (p[s] >= thr) { last = s; gap = 0; }
+    else if (++gap > maxGap && at(s) > 1) break;
   }
-  return { d: clamp(bdAt(last), .9, 2.2), ok: true };
+  return { d: clamp(at(last), .9, 2.2), ok: true };
+}
+const tipDist = (P, k) => tipDistArr(P.subarray(k * BS, (k + 1) * BS));
+// Fine adjustment after the smoothing pass, on the stored frame: tries the chosen line ±2.25° (0.75° steps) and a little
+// sideways, keeps a change only if it clearly fits the bat better, and returns a fine profile along it for the bat head.
+function refineBat(img, g, th0, o0) {
+  const { H, T } = g, off = Math.max(3, .09 * T), lat = Math.max(4, .16 * T), lstep = lat / 4;
+  const line = (x, y, nx, ny) => {
+    const c = sampleG(img, x, y), l = sampleG(img, x + nx, y + ny), r = sampleG(img, x - nx, y - ny);
+    if (!(c === c && l === l && r === r)) return 0;
+    const a = c - l, b = c - r; return a * b > 0 ? Math.min(Math.abs(a), Math.abs(b)) : 0;
+  };
+  const n = 48, fw = new Float32Array(n), bk = new Float32Array(32);
+  const robust = a => { a.sort(); let s = 0; const k = Math.max(1, Math.round(a.length * .6)); for (let i = a.length - k; i < a.length; i++) s += a[i]; return s / k; };
+  const score = (th, o) => {
+    const ux = Math.cos(th), uy = Math.sin(th), px = -uy, py = ux, nx = px * off, ny = py * off, ox = H[0] + px * o, oy = H[1] + py * o;
+    for (let s = 0; s < n; s++) { const d = T * (.3 + 1.4 * s / (n - 1)); fw[s] = line(ox + ux * d, oy + uy * d, nx, ny); }
+    for (let s = 0; s < 32; s++) { const d = T * (.3 + .9 * s / 31); bk[s] = line(ox - ux * d, oy - uy * d, nx, ny); }
+    return Math.max(0, robust(fw) - .8 * robust(bk));
+  };
+  const base = score(th0, o0); let best = { sc: base, th: th0, o: o0 };
+  for (let dt = -3; dt <= 3; dt++) for (let dof = -2; dof <= 2; dof++) {
+    if (!dt && !dof) continue;
+    const th = th0 + dt * .75 * Math.PI / 180, o = o0 + dof * lstep / 2, sc = score(th, o);
+    if (sc > best.sc) best = { sc, th, o };
+  }
+  if (best.sc < base * 1.05) best = { sc: base, th: th0, o: o0 }; // not clearly better: keep the smoothed choice
+  const N2 = 128, P = new Float32Array(N2), ux = Math.cos(best.th), uy = Math.sin(best.th), px = -uy, py = ux;
+  for (let s = 0; s < N2; s++) { const d = T * (BD0 + (BD1 - BD0) * s / (N2 - 1)); P[s] = line(H[0] + px * best.o + ux * d, H[1] + py * best.o + uy * d, px * off, py * off); }
+  return { th: best.th, o: best.o, P };
 }
 // dynamic programming: one direction per frame from the image evidence, with a turn limit between frames
 // How far the bat may turn between frames follows the hands: still hands = still bat, fast hands = fast turn (q.sig, degrees).
@@ -1506,10 +1642,16 @@ function solveBatPath(fr, fps) {
   const pkT = sm.indexOf(Math.max(...sm));
   fr.forEach((q, t) => { q.pre = t < pkT || !same(t, pkT); });
   const ks = smoothDirections(fr, fps, G); fr.forEach((q, t) => q.kSel = ks[t]);
+  // fine adjustment of each frame's line on the stored frame (direction to 0.75°, a finer profile for the bat head)
+  fr.forEach((q, t) => {
+    q.rth = ks[t] * 2 * Math.PI / BK; q.ro = q.scan ? q.scan.O[ks[t]] : 0; q.rP = null;
+    if (q.img && q.geo && q.scan && q.fd == null) { const r = refineBat({ g: q.img, w: q.w, h: q.h }, q.geo, q.rth, q.ro); q.rth = r.th; q.ro = r.o; q.rP = r.P; }
+    q.img = null; // free the stored frame
+  });
   // one bat length for the clip: from your taps if any, else from frames where the bat was clearly seen
   const tapped = fr.filter(q => q.fd != null && q.Ts).map(q => q.fd / q.Ts);
   const seen = [];
-  fr.forEach((q, t) => { if (!q.scan || !q.Ts) return; const r = tipDist(q.scan.P, ks[t]); q.td = r; if (r.ok && q.scan.S[ks[t]] / G > .5) seen.push(r.d); });
+  fr.forEach((q, t) => { if (!q.scan || !q.Ts) return; const r = q.rP ? tipDistArr(q.rP) : tipDist(q.scan.P, ks[t]); q.td = r; if (r.ok && q.scan.S[ks[t]] / G > .5) seen.push(r.d); });
   let L = tapped.length ? median(tapped) : seen.length >= 5 ? median(seen) : 1.6;
   if (!tapped.length) L = clamp(L, 1.2, 2.1);
   const dT = fr.map((q, t) => {
@@ -1522,8 +1664,8 @@ function solveBatPath(fr, fps) {
   return fr.map((q, t) => {
     if (dm[t] == null || !q.Hs) return null;
     const near = win(dm, t, 1), d = near.reduce((s, v) => s + v, 0) / near.length * q.Ts;
-    const th = ks[t] * 2 * Math.PI / BK;
-    const o = q.fd != null || !q.scan ? 0 : q.scan.O[ks[t]]; // sideways offset of the detected line from the hands
+    const th = q.fd != null ? ks[t] * 2 * Math.PI / BK : q.rth; // refined direction (a tapped point keeps its own)
+    const o = q.fd != null || !q.scan ? 0 : q.ro; // sideways offset of the detected line from the hands
     return [q.Hs[0] - Math.sin(th) * o + Math.cos(th) * d, q.Hs[1] + Math.cos(th) * o + Math.sin(th) * d];
   });
 }
@@ -1604,7 +1746,8 @@ async function autoBat(c) {
       prev = img;
       if (!c.poseCache.has(f) || cut) detectInto(c, f, cut);
       const g = poseGeom(c.poseCache.get(f), img); geo = g || geo; // no person found: scan from the last known hands
-      const q = { f, seg, geo, own: !!g, w: img.w, h: img.h, scan: geo ? batScan(img, mot, geo) : null, forced: null, fd: null };
+      const q = { f, seg, geo, own: !!g, w: img.w, h: img.h, scan: geo ? batScan(img, mot, geo) : null, forced: null, fd: null,
+        img: geo ? new Uint8ClampedArray(img.g) : null }; // kept (compactly) for the fine adjustment after smoothing
       const tap = c.track.get(f);
       if (tap && tap.m && geo) {
         const tx = tap.x * img.w - geo.H[0], ty = tap.y * img.h - geo.H[1];
@@ -1895,7 +2038,7 @@ function clipState(c) {
   if (!c.loaded) return c.relink || c.pendingRestore || null;
   if (c.pendingRestore) return c.pendingRestore;
   return { src: { ...c.src }, fps: c.fps, fpsAuto: c.fpsAuto, timeFps: c.timeFps, mirror: c.mirror, place: { ...c.place },
-    markers: c.markers.map(m => ({ ...m })), time: c.v.currentTime, poseOn: c.pose, pose: [...c.poseCache].filter(e => e[1]),
+    markers: c.markers.map(m => ({ ...m })), time: c.v.currentTime, poseOn: c.pose, angles: c.angles, pose: [...c.poseCache].filter(e => e[1]),
     track: [...c.track].map(([f, q]) => [f, { ...q }]) };
 }
 function buildSession() {
@@ -2070,6 +2213,7 @@ function buildClipPop(p, c) {
     <button class="mi" data-a="autobat" ${dis}>${ic('trail')}<span class="grow">${batJob ? '自動作成を停止' : 'バットの軌跡を自動で描く'}</span></button>
     <button class="mi" data-a="mirror" ${dis}>${ic('mirror')}<span class="grow">左右反転</span>${onOff(c.mirror)}</button>
     <button class="mi" data-a="pose" ${dis}>${ic('pose')}<span class="grow">骨格の自動検出</span>${onOff(c.pose)}</button>
+    <button class="mi" data-a="angles" ${c.pose && c.loaded ? '' : 'disabled'}>${ic('deg')}<span class="grow">骨格の角度表示</span>${onOff(c.angles)}</button>
     <button class="mi" data-a="analyze" ${c.pose && c.loaded ? '' : 'disabled'}>${ic('scan')}<span class="grow">${analyzing ? '解析を中止' : '全フレームの骨格を先に解析'}</span></button>
     <div class="mrow small">コマ送りfps <select data-a="fps" ${dis}>${fpsOpts}</select></div>
     ${S.mode === 'overlay' ? `<hr>
@@ -2084,6 +2228,7 @@ function buildClipPop(p, c) {
     if (a === 'file') return pickFile(c.id);
     if (a === 'mirror') { c.mirror = !c.mirror; applyCss(); }
     if (a === 'pose') togglePose(c);
+    if (a === 'angles') { c.angles = !c.angles; dirty = true; }
     if (a === 'analyze') { closePop(); analyzeAll(c); return; }
     if (a === 'autobat') { closePop(); autoBat(c); return; }
     if (a === 'preset') { c.place = { s: 1, tx: 0, ty: 0 }; applyCss(); }
@@ -2099,7 +2244,7 @@ function buildClipPop(p, c) {
   p.oninput = null;
 }
 function buildMorePop(p) {
-  p.innerHTML = `<button class="mi" data-a="angles">${ic('deg')}<span class="grow">骨格の角度表示</span>${onOff(S.angles)}</button>
+  p.innerHTML = `
     <button class="mi" data-a="trail">${ic('trail')}<span class="grow">バットの軌跡を表示</span>${onOff(S.trail)}</button>
     <button class="mi" data-a="loop">${ic('repeat')}<span class="grow">ループ再生</span>${onOff(S.loop)}</button><hr>
     <button class="mi" data-a="fit">${ic('zoom')}<span class="grow">拡大をリセット</span></button>
@@ -2108,7 +2253,6 @@ function buildMorePop(p) {
   p.onclick = e => {
     const b = e.target.closest('button[data-a]'); if (!b) return;
     const a = b.dataset.a;
-    if (a === 'angles') { S.angles = !S.angles; LS.set('angles', S.angles); }
     if (a === 'trail') { S.trail = !S.trail; if (!S.trail && S.tool === 'track') setTool('select'); if (S.trail && ![A, B].some(c => c.track.size)) toast('ツールの「軌跡」を押すとバットの軌跡を自動で描きます', 3500); updateUI(); }
     if (a === 'loop') { S.loop = !S.loop; A.v.loop = B.v.loop = S.loop; }
     if (a === 'fit') { for (const st of ST) st.z = { s: 1, x: 0, y: 0 }; applyCss(); closePop(); return; }
@@ -2197,7 +2341,7 @@ function buildRatePop(p) {
 }
 function togglePose(c) {
   if (c.tainted) return toast('この動画は骨格検出できません', 5000);
-  c.pose = !c.pose; if (c.pose) getLM().catch(() => { c.pose = false; updateUI(); });
+  c.pose = !c.pose; if (c.pose) { c.angles = false; getLM().catch(() => { c.pose = false; updateUI(); }); } // skeleton on: angles start hidden
   updateUI();
 }
 
@@ -2215,6 +2359,8 @@ function updateUI() {
   for (const c of [A, B]) {
     $('#name' + c.id).textContent = c.name || '未選択';
     const pb = $(`[data-pose="${c.id}"]`); pb.classList.toggle('on', c.pose); pb.disabled = !c.loaded;
+    $(`[data-posebox="${c.id}"]`).classList.toggle('on', c.pose && c.loaded); // the 角度 switch appears inside the 骨格 button while the skeleton is on
+    const sw = $(`[data-ang="${c.id}"]`); sw.classList.toggle('on', c.angles); sw.setAttribute('aria-checked', String(c.angles));
   }
   const m = master();
   const playing = m.loaded && !m.v.paused;
@@ -2263,6 +2409,15 @@ function toggleTrack() {
   dirty = true; updateUI();
 }
 $$('[data-pose]').forEach(b => b.onclick = () => togglePose(clips[b.dataset.pose]));
+// 角度 switch: tap to flip, or swipe right = on / left = off (keyboard: Enter/Space)
+$$('[data-ang]').forEach(b => {
+  const c = clips[b.dataset.ang]; let x0 = null;
+  const set = on => { c.angles = on; dirty = true; updateUI(); };
+  b.addEventListener('pointerdown', e => { x0 = e.clientX; try { b.setPointerCapture(e.pointerId); } catch (_) {} });
+  b.addEventListener('pointerup', e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; set(dx > 8 ? true : dx < -8 ? false : !c.angles); });
+  b.addEventListener('pointercancel', () => { x0 = null; });
+  b.addEventListener('click', e => { if (e.detail === 0) set(!c.angles); }); // keyboard activation only (pointer handled above)
+});
 $$('[data-menu]').forEach(b => b.onclick = () => openPop('clip' + b.dataset.menu, b, p => buildClipPop(p, clips[b.dataset.menu]), true));
 $$('[data-move]').forEach(b => b.onclick = () => { // 移動 in the A / B row (overlay): move that video; press again to stop
   closePop(); const id = b.dataset.move;
