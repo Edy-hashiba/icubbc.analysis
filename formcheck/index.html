@@ -1,0 +1,2203 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>FormCheck</title>
+<meta name="theme-color" content="#171b21">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FormCheck">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#0f1216;--panel:#171b21;--panel2:#20262e;--line:#2c333d;--text:#e8ecf1;--muted:#8d97a5;--accent:#4fc3f7;--a:#ff5d73;--b:#3cc8ff}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;-webkit-user-select:none;user-select:none}
+button,select{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap;touch-action:manipulation}
+button:hover{border-color:#46505d}
+button.on{background:var(--accent);color:#111;border-color:var(--accent)}
+button.primary{background:var(--accent);color:#111;border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.35;cursor:default}
+button.sm{padding:3px 8px;font-size:12px;border-radius:7px}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;display:block}
+.ib{width:36px;height:36px;padding:0;display:inline-grid;place-items:center;flex:0 0 36px}
+header{display:flex;align-items:center;gap:6px;padding:6px 8px;padding-top:max(6px,env(safe-area-inset-top));background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;letter-spacing:.02em;margin-right:auto;white-space:nowrap}
+.brand span{color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:0 0 auto}
+.seg button{border:0;border-radius:0;background:transparent;padding:6px 10px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent);color:#111}
+#resume{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#0f2430;border-bottom:1px solid #1d4a63;font-size:13px}
+#resume[hidden]{display:none}
+#resume span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#stages{flex:1;display:flex;gap:4px;padding:4px;min-height:0}
+.stage{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#000}
+.stage.active{border-color:var(--accent)}
+.stage-head{display:flex;align-items:center;gap:4px;padding:3px 4px 3px 6px;background:var(--panel);flex:0 0 auto;min-width:0}
+.stage-head .ib{width:30px;height:28px;flex-basis:30px;border-radius:7px}
+.stage-head svg.i{width:17px;height:17px}
+.tag{font-weight:800;border-radius:6px;padding:0 6px;color:#111;flex:0 0 auto;font-size:13px}
+.tA{background:var(--a)}.tB{background:var(--b)}
+.name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:12px}
+.viewport{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none}
+.wrap{position:absolute;inset:0;transform-origin:0 0}
+.vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%;pointer-events:none}
+.ink{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.ink.t-select{cursor:default}.ink.t-moveB{cursor:move}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted);pointer-events:none;text-align:center;padding:16px;font-size:13px}
+.empty b{color:var(--text)}
+.empty .row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.empty button{pointer-events:auto;display:inline-flex;align-items:center;gap:6px;padding:9px 14px}
+body.m-single #stage1{display:none}
+body.m-overlay #stages{flex-direction:column}
+body.m-overlay #stage1{flex:0 0 auto}
+body.m-overlay #stage1 .viewport{display:none}
+.ov-only{display:none!important}
+body.m-overlay .ov-only{display:inline-grid!important}
+#tools{display:flex;align-items:center;gap:3px;padding:5px 6px;background:var(--panel);border-top:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+#tools::-webkit-scrollbar{display:none}
+#tools .ib{width:34px;height:34px;flex-basis:34px}
+#tools .push{margin-left:auto}
+.ib.lab{width:auto;min-width:38px;height:44px;flex:0 0 auto;padding:3px 5px;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.ib.lab svg.i{width:18px;height:18px}
+.cap{font-size:10px;line-height:1.1;white-space:nowrap}
+#tools .ib.lab{width:auto;flex-basis:auto;min-width:35px;height:44px;padding:3px 3px}
+.hb{padding:4px 9px;font-size:12px;border-radius:7px;flex:0 0 auto}
+@media (max-width:400px){#tools{gap:2px;padding:5px 4px}#tools .ib.lab{min-width:33px;padding:3px 2px}.brand{display:none}
+  body.m-overlay #tools .ib.lab{min-width:30px;padding:3px 1px}}
+@media (max-width:480px){body.m-side .stage-head [data-pose]{display:none}}
+#trackBar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 8px;background:#1d2410;border-top:1px solid #3c4a1c;font-size:12px}
+#trackBar .hint{flex:1;min-width:90px;color:#d9e6b8}
+#trackBar .cnt{color:var(--muted)}
+#moveBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 8px;background:#10222c;border-top:1px solid #1d4a63;font-size:12px}
+#moveBar .hint{color:#bfe6f7}
+#moveBar .hint2{flex:1;min-width:120px;color:var(--muted)}
+#moveSeg button{padding:4px 14px;font-weight:700}
+#dropOverlay{position:fixed;inset:0;z-index:40;display:flex;gap:12px;padding:16px;background:rgba(8,12,16,.84)}
+.dz{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:3px dashed #3a4552;border-radius:18px;color:var(--muted);font-size:18px;text-align:center;padding:12px;transition:background .12s,border-color .12s}
+.dz .tag{font-size:30px;padding:2px 16px}
+.dz small{font-size:12px}
+.dz.hot{border-color:var(--accent);background:rgba(79,195,247,.14);color:var(--text)}
+@media (max-width:600px){#dropOverlay{flex-direction:column}}
+.dz-lib{display:none}
+#dropOverlay.lib .dz-lib{display:flex}
+#dropOverlay.lib .dz:not(.dz-lib){display:none}
+#library{position:fixed;inset:0;z-index:18;background:var(--bg);display:flex;flex-direction:column}
+.lib-head{display:flex;align-items:center;gap:8px;padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top));background:var(--panel);border-bottom:1px solid var(--line)}
+.lib-title{font-weight:800;margin-right:auto;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#libResume{margin:10px 12px 0;padding:8px 10px;border-radius:10px;background:#0f2430;border:1px solid #1d4a63;display:flex;gap:8px;align-items:center;font-size:13px}
+#libResumeTxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#libSub{padding:8px 12px 0}
+#libGrid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;padding:10px 12px 24px;align-content:start}
+.vcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.vcard:hover{border-color:#46505d}
+.vcard .th{position:relative;aspect-ratio:16/10;background:#000;display:grid;place-items:center;color:var(--muted)}
+.vcard .th img{width:100%;height:100%;object-fit:contain}
+.vcard .dur{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.78);font-size:11px;padding:1px 6px;border-radius:6px;font-variant-numeric:tabular-nums}
+.vcard .badge{position:absolute;left:6px;top:6px}
+.vcard .nm{padding:7px 8px 0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vcard .meta{padding:1px 8px 0;font-size:11px;color:var(--muted)}
+.vcard .acts{display:flex;gap:6px;padding:8px}
+.vcard .acts button{flex:1;padding:6px 4px;font-size:12px}
+.vcard .acts .del{flex:0 0 34px;display:grid;place-items:center;padding:0}
+.vcard .acts .del svg.i{width:16px;height:16px}
+.libEmpty{grid-column:1/-1;text-align:center;color:var(--muted);padding:48px 16px;line-height:1.7}
+.ink.t-track{cursor:crosshair}
+#styleBtn .dot{width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+#ctrl{display:flex;flex-direction:column;gap:4px;padding:4px 6px;padding-bottom:max(6px,env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line)}
+#seekRow{display:flex;align-items:center;gap:8px}
+#overview{position:relative;flex:1;min-width:0;height:24px;cursor:pointer;touch-action:none}
+#overview .track{position:absolute;left:0;right:0;top:10px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+#overview .fill{height:100%;width:0;background:var(--accent)}
+#overview .head{position:absolute;top:4px;left:0;width:3px;height:16px;margin-left:-1.5px;border-radius:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#ticks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+.tick{position:absolute;top:2px;height:7px;width:3px;margin-left:-1.5px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#tlabel{font-variant-numeric:tabular-nums;font-size:11px;color:var(--muted);white-space:nowrap}
+#jog{display:block;width:100%;height:46px;border-radius:8px;background:#0b0e12;border:1px solid var(--line);touch-action:none;cursor:ew-resize}
+#transport{display:flex;align-items:center;justify-content:space-between;gap:4px}
+#transport .grp{display:flex;align-items:center;gap:3px}
+#rateBtn{min-width:56px;font-variant-numeric:tabular-nums}
+#rateBtn b{font-size:14px;line-height:1.1}
+#playBtn{width:48px;flex-basis:48px}
+.rates{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 6px 6px}
+.rates button{height:42px;font-weight:600;font-variant-numeric:tabular-nums}
+@media (max-width:480px){.wide-only{display:none!important}.brand{font-size:13px}header .seg button{padding:5px 8px;font-size:13px}}
+/* popover */
+#pop{position:fixed;z-index:15;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,.55);padding:6px;width:max-content;min-width:230px;max-width:min(380px,calc(100vw - 16px));max-height:75dvh;overflow:auto}
+#pop[hidden]{display:none}
+.pop-title{font-size:12px;color:var(--muted);padding:4px 8px 6px;display:flex;align-items:center;gap:6px;max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.mi{display:flex;width:100%;align-items:center;gap:10px;background:transparent;border:0;border-radius:8px;padding:8px;text-align:left}
+.mi:hover:not(:disabled){background:var(--panel2)}
+.mi .grow{flex:1}
+.mi .st{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:0 7px}
+.mi .st.on{color:#111;background:var(--accent);border-color:var(--accent);font-weight:700}
+#pop hr{border:0;border-top:1px solid var(--line);margin:5px 0}
+.mrow{padding:5px 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mrow input[type=range]{flex:1;accent-color:var(--accent)}
+.swatches{display:flex;gap:10px;padding:8px}
+.sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid transparent}
+.sw.on{border-color:#fff;box-shadow:0 0 0 2px #000 inset}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-size:13px;padding:6px 11px;border-left:4px solid var(--mc,var(--line))}
+.chips button.set{background:#2b3440}
+table.mt{width:100%;border-collapse:collapse;font-size:12px;margin:2px 0}
+table.mt td{padding:4px 6px;border-top:1px solid var(--line);white-space:nowrap}
+table.mt tr:first-child td{border-top:0}
+table.mt .num{text-align:right;font-variant-numeric:tabular-nums}
+table.mt tr.th td{color:var(--muted)}
+table.mt tr.tot td{color:var(--accent);font-weight:600}
+table.mt button{padding:1px 6px;font-size:11px;margin-left:3px}
+.dotc{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+input[type=text],input[type=password],input[type=number]{min-width:0;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit}
+input[type=text],input[type=password]{flex:1}
+/* modals */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:20;padding:12px}
+.modal.open{display:flex}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:580px;width:100%;max-height:90dvh;overflow:auto;padding:16px 18px;-webkit-user-select:text;user-select:text}
+.card h3{margin:0}
+.row{display:flex;gap:8px;align-items:center}
+.between{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.muted{color:var(--muted)}.small{font-size:12px}
+.list{margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .meta{flex:1;min-width:0}
+.item .meta div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item.folder{cursor:pointer}
+.item.folder:hover{background:var(--panel2)}
+.thumb{width:72px;height:46px;border-radius:6px;object-fit:cover;background:#000;flex:0 0 72px}
+.card .chips{margin-top:10px}
+.card .chips button{max-width:220px;overflow:hidden;text-overflow:ellipsis;border-left-width:1px}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;color:var(--muted)}
+ol,ul{padding-left:20px;margin:8px 0}
+li{margin:4px 0}
+code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:12px}
+.toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:rgba(0,0,0,.88);color:#fff;padding:8px 16px;border-radius:20px;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;font-size:13px}
+</style>
+</head>
+<body class="m-single">
+
+<header>
+  <div class="brand">Form<span>Check</span></div>
+  <div class="seg" id="modeSeg">
+    <button data-mode="single" class="on">1画面</button>
+    <button data-mode="side">左右</button>
+    <button data-mode="overlay">重ね</button>
+  </div>
+  <button id="libBtn" title="この端末に保存した動画の一覧">動画一覧</button>
+  <button id="sessBtn" title="分析の保存・読込">保存</button>
+  <button id="moreBtn" title="表示・その他">メニュー</button>
+</header>
+<div id="resume" hidden><span id="resumeTxt"></span><button id="resumeOpen" class="primary sm">開く</button><button id="resumeX" class="sm" aria-label="閉じる">✕</button></div>
+
+<main id="stages">
+  <section class="stage active" id="stage0">
+    <div class="stage-head" data-clip="A">
+      <span class="tag tA">A</span><span class="name" id="nameA">未選択</span>
+      <button class="hb" data-pose="A" title="骨格の自動検出">骨格</button>
+      <button class="hb" data-menu="A" title="Aのメニュー（読込・反転など）">メニュー</button>
+    </div>
+    <div class="viewport">
+      <div class="wrap"></div>
+      <canvas class="ink t-select"></canvas>
+      <div class="empty"><div class="msg"></div><div class="row"><button data-elib="A" class="primary"></button><button data-efile="A"></button></div></div>
+    </div>
+  </section>
+  <section class="stage" id="stage1">
+    <div class="stage-head" data-clip="B">
+      <span class="tag tB">B</span><span class="name" id="nameB">未選択</span>
+      <button class="hb" data-pose="B" title="骨格の自動検出">骨格</button>
+      <button class="hb" data-menu="B" title="Bのメニュー（読込・反転・透明度など）">メニュー</button>
+    </div>
+    <div class="viewport">
+      <div class="wrap"></div>
+      <canvas class="ink t-select"></canvas>
+      <div class="empty"><div class="msg"></div><div class="row"><button data-elib="B" class="primary"></button><button data-efile="B"></button></div></div>
+    </div>
+  </section>
+</main>
+
+<div id="trackBar" hidden>
+  <span class="tag" id="trackTag">A</span>
+  <span class="hint">ずれたコマは先端をタップで修正 →「自動で描く」で描き直し</span>
+  <span class="cnt" id="trackCount"></span>
+  <button class="sm" id="trackAdv" title="タップした後に自動で次のコマへ進む">次のコマへ: ON</button>
+  <button class="sm primary" id="trackAuto" title="バットの先端を自動で見つけて軌跡を描く（タップした点は正解として使います）">自動で描く</button>
+  <button class="sm" id="trackDel">この点を消す</button>
+  <button class="sm" id="trackClear">全消去</button>
+</div>
+<div id="moveBar" hidden>
+  <span class="hint">動かす動画</span>
+  <div class="seg" id="moveSeg"><button data-mv="A">A</button><button data-mv="B">B</button></div>
+  <span class="hint2">ドラッグで移動・ピンチ/ホイールで拡大縮小</span>
+  <button class="sm" id="moveReset">リセット</button>
+</div>
+<div id="tools">
+  <button class="ib on" data-tool="select" data-icon="select" data-label="選択" title="選択・移動（拡大中は空白ドラッグで移動）"></button>
+  <button class="ib" data-tool="track" data-icon="trail" data-label="軌跡" title="バット先端の軌跡（タップで記録・自動追跡）"></button>
+  <button class="ib" data-tool="pen" data-icon="pen" data-label="ペン" title="ペン"></button>
+  <button class="ib" data-tool="line" data-icon="line" data-label="直線" title="直線"></button>
+  <button class="ib" data-tool="arrow" data-icon="arrow" data-label="矢印" title="矢印"></button>
+  <button class="ib" data-tool="angle" data-icon="angle" data-label="角度" title="角度（3点タップ・真ん中が頂点）"></button>
+  <button class="ib" data-tool="circle" data-icon="circle" data-label="円" title="円"></button>
+  <button class="ib" data-tool="poly" data-icon="poly" data-label="関節" title="関節（順にタップ→確定）"></button>
+  <button class="ib ov-only" data-tool="moveB" data-icon="moveB" data-label="移動" title="動画を動かす（A/Bを選んでドラッグで移動・ホイール/ピンチで拡大縮小）"></button>
+  <button id="polyDone" class="primary" hidden>確定</button>
+  <button class="ib lab push" id="styleBtn" title="色・太さ・全消去"><span class="dot"></span><span class="cap">色</span></button>
+  <button class="ib" id="delBtn" data-icon="trash" data-label="削除" title="選択中の図形を削除" hidden></button>
+  <button class="ib" id="undoBtn" data-icon="undo" data-label="戻す" title="元に戻す"></button>
+</div>
+
+<div id="ctrl">
+  <div id="seekRow">
+    <div id="overview" title="タップした位置へジャンプ"><div class="track"><div class="fill"></div></div><div id="ticks"></div><div class="head"></div></div>
+    <span id="tlabel">--</span>
+  </div>
+  <canvas id="jog" title="左右にスワイプでコマ送り（はじくと連続）・左右をタップで1コマ" aria-label="コマ送りストリップ"></canvas>
+  <div id="transport">
+    <div class="grp">
+      <button class="ib wide-only" id="back10" data-icon="back10" data-label="10コマ戻る" title="10コマ戻る (Shift+←)"></button>
+      <button class="ib" id="back1" data-icon="back1" data-label="1コマ戻る" title="1コマ戻る (←)・長押しで連続"></button>
+      <button class="ib lab" id="playBtn" title="再生/停止 (Space)"></button>
+      <button class="ib" id="fwd1" data-icon="fwd1" data-label="1コマ進む" title="1コマ進む (→)・長押しで連続"></button>
+      <button class="ib wide-only" id="fwd10" data-icon="fwd10" data-label="10コマ進む" title="10コマ進む (Shift+→)"></button>
+    </div>
+    <button class="ib lab" id="rateBtn" title="再生速度"><b id="rateVal">1x</b><span class="cap">速度</span></button>
+    <div class="grp">
+      <button class="ib" id="markBtn" data-icon="flag" data-label="マーカー" title="タイミング・マーカー (M)"></button>
+      <button class="ib" id="linkBtn" data-icon="link" data-label="同期" title="AとBの今のフレームで同期"></button>
+    </div>
+  </div>
+</div>
+
+<div id="library" hidden>
+  <div class="lib-head">
+    <div class="lib-title" id="libTitle">動画一覧</div>
+    <button id="libAdd" class="primary">＋ 動画を追加</button>
+    <button id="libClose">閉じる</button>
+  </div>
+  <div id="libResume" hidden><span id="libResumeTxt"></span><button class="sm primary" id="libResumeOpen">開く</button></div>
+  <div id="libSub" class="small muted"></div>
+  <div id="libGrid"></div>
+</div>
+<input type="file" id="libIn" accept="video/*" multiple hidden>
+<div id="pop" hidden></div>
+<div id="dropOverlay" hidden>
+  <div class="dz" data-dz="A"><span class="tag tA">A</span><b>A に読み込む</b><small>ここにドロップ</small></div>
+  <div class="dz" data-dz="B"><span class="tag tB">B</span><b>B に読み込む（比較）</b><small>2本まとめてドロップすると A・B 両方に入ります</small></div>
+  <div class="dz dz-lib" data-dz="L"><b>動画一覧に追加</b><small>何本でもまとめてドロップできます</small></div>
+</div>
+<input type="file" id="fileIn" accept="video/*" hidden>
+
+<!-- Sessions -->
+<div class="modal" id="sessModal">
+  <div class="card">
+    <div class="between"><h3>分析の保存・読込</h3><button data-close>✕</button></div>
+    <div class="row"><input type="text" id="sessName" placeholder="名前（例: 6/1 打撃 田中）" maxlength="40"></div>
+    <div class="row" style="margin-top:8px"><button id="sessSave" class="primary">新規保存</button><button id="sessOverwrite" hidden>上書き保存</button></div>
+    <label class="row small muted" style="margin-top:10px"><input type="checkbox" id="storeVid"> 動画もこの端末に保存する（次回すぐ開ける・容量を使います）</label>
+    <p class="small muted" id="storageInfo"></p>
+    <div id="sessList" class="list"></div>
+    <p class="small muted">直前の作業は自動で保存され、次回起動時に「前回の分析を開く」が出ます。</p>
+  </div>
+</div>
+
+<!-- Help -->
+<div class="modal" id="helpModal">
+  <div class="card">
+    <div class="between"><h3>使い方</h3><button data-close>✕</button></div>
+    <ul class="small">
+      <li><b>動画一覧</b>: 「＋ 動画を追加」（またはドラッグ&amp;ドロップ）で動画をこの端末に保存。一覧から動画をタップするとチェック開始。比較したいときは「Bで比較」、または B の「動画一覧から選ぶ」。どの方法で開いた動画も自動で一覧に入ります。不要になったらゴミ箱で削除。Google Drive の動画は、スマホは「＋ 動画を追加」→「Google Drive」、パソコンは「パソコン版 Google ドライブ」から選べます。</li>
+      <li><b>その他の読み込み</b>: 「ファイル」、A・B 横の「メニュー」、または画面に直接ドラッグ&amp;ドロップ（「A」「B」の枠に落とす。2本まとめてで A・B 両方）。</li>
+      <li><b>コマ送り</b>: 目盛りのストリップを左右にスワイプ（はじくと連続で動き、だんだん止まる）。ストリップの左右をタップ、または ‹ › で1コマ（長押しで連続）。上の細いバーはタップした位置へジャンプ。キーボード ← →（Shiftで10コマ）、Spaceで再生/停止。fpsは自動推定（違うときは A・B の「メニュー」で変更）。</li>
+      <li><b>速度</b>: 速度ボタン（1x）から 0.1〜2倍。</li>
+      <li><b>左右・重ね</b>: A・Bを読み込み、それぞれ合わせたい瞬間で止めて「同期」→ 以後一緒に動きます。重ねでは B の「メニュー」で透明度。ツールの「移動」で A・B どちらも位置・大きさを自由に動かせます（上のバーで動かす動画を選ぶ・ドラッグで移動・ピンチ/ホイールで拡大縮小・「リセット」で元に戻す）。</li>
+      <li><b>描画</b>: 直線・矢印・円・ペン・角度（3点）・関節（肩→肘→手首…と順にタップ→確定）。「選択」で点や図形をドラッグ、骨格の点も修正できます。</li>
+      <li><b>拡大</b>: ホイール / 2本指ピンチ。拡大中は「選択」で空白をドラッグ。</li>
+      <li><b>マーカー</b>: 「マーカー」ボタン → 種目を選び、そのコマで「着地」「インパクト」などをタップ。区間の秒数が出ます。A・B両方に付けると比較表と「〇〇で同期」。キーボード M で次のマーカー。</li>
+      <li><b>スロー動画</b>: スロー撮影を通常速度で書き出した動画は、マーカー画面の「時間計算fps」に撮影fps（例: 240）を入れると実際の秒数になります。</li>
+      <li><b>保存</b>: 上の「保存」で名前を付けて保存。図形・マーカー・同期・骨格の修正が残ります。直前の作業は自動保存。</li>
+      <li><b>バットの軌跡</b>: ツールの「軌跡」を押すと、すぐに自動で描き始めます（A・B の「メニュー」→「バットの軌跡を自動で描く」でも可）。体の位置から自動でバットの先端を探して軌跡を描きます。ずれたコマは「軌跡」ツールで先端をタップして直し、もう一度「自動で描く」（タップした点は正解として使われます）。マーカーが2つ以上あるとその範囲を、無いときは手が一番速く動いた前後（スイング部分）を描きます。骨格のON/OFFとは関係なく使えます。</li>
+      <li><b>骨格</b>: 初回はモデル（約9MB）をダウンロード。</li>
+    </ul>
+    <details open>
+      <summary>設定</summary>
+      <div class="row small" style="margin-top:8px">骨格モデル
+        <select id="modelSel"><option value="lite">Lite（速い）</option><option value="full">Full（標準）</option><option value="heavy">Heavy（高精度・重い）</option></select>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ---------- helpers ----------
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dist = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('fc_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('fc_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+let toastT;
+function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, ms); }
+
+const ICONS = {
+  select: '<path d="M6 3l13 7.5-5.5 1.5L11 18z"/>',
+  pen: '<path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/>',
+  line: '<path d="M5 19L19 5"/>',
+  arrow: '<path d="M5 19L19 5"/><path d="M10 5h9v9"/>',
+  angle: '<path d="M4 19h16"/><path d="M4 19L15 5"/><path d="M10.5 19a6.5 6.5 0 0 0-2.3-5"/>',
+  circle: '<circle cx="12" cy="12" r="7.5"/>',
+  poly: '<path d="M5 6l6 8 8-4"/><circle cx="5" cy="6" r="2" fill="currentColor"/><circle cx="11" cy="14" r="2" fill="currentColor"/><circle cx="19" cy="10" r="2" fill="currentColor"/>',
+  moveB: '<path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  more: '<circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/>',
+  pose: '<circle cx="12" cy="4.5" r="2"/><path d="M12 7v6M6.5 10l5.5-2 5.5 2M8.5 21l3.5-8 3.5 8"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>',
+  play: '<path d="M7 4.5l12 7.5-12 7.5z" fill="currentColor"/>',
+  pause: '<path d="M7 5h3v14H7zM14 5h3v14h-3z" fill="currentColor"/>',
+  back1: '<path d="M15 5l-7 7 7 7"/>',
+  fwd1: '<path d="M9 5l7 7-7 7"/>',
+  back10: '<path d="M12 5l-7 7 7 7M19 5l-7 7 7 7"/>',
+  fwd10: '<path d="M5 5l7 7-7 7M12 5l7 7-7 7"/>',
+  save: '<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+  folder: '<path d="M3 6.5h6l2 2h10V19H3z"/>',
+  cloud: '<path d="M7 18.5a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 10a4.3 4.3 0 0 1 0 8.5z"/>',
+  mirror: '<path d="M12 3v18" stroke-dasharray="2 2.5"/><path d="M9 7L4 17h5zM15 7l5 10h-5z"/>',
+  scan: '<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><path d="M7 15c2-4 5-6 10-7"/>',
+  image: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/>',
+  zoom: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M8 11h6"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7"/><circle cx="12" cy="17" r=".8" fill="currentColor"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  repeat: '<path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/>',
+  trail: '<path d="M4 19c3-8 9-12 16-13" stroke-dasharray="1.5 3"/><circle cx="19.5" cy="6" r="2" fill="currentColor"/>',
+  deg: '<path d="M4 19h16M4 19L15 5"/><circle cx="17" cy="14" r="1.8"/>',
+  opacity: '<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6" stroke-dasharray="2 2"/>',
+  reset: '<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/>'
+};
+const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
+$$('[data-icon]').forEach(el => {
+  el.innerHTML = ic(el.dataset.icon) + (el.dataset.label ? `<span class="cap">${el.dataset.label}</span>` : '');
+  if (el.dataset.label) { el.classList.add('lab'); el.setAttribute('aria-label', el.dataset.label); }
+});
+$$('[data-efile]').forEach(el => el.innerHTML = ic('folder') + '<span>ファイル</span>');
+$$('[data-elib]').forEach(el => el.innerHTML = ic('image') + '<span>動画一覧から選ぶ</span>');
+
+const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const MODEL = m => `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_${m}/float16/1/pose_landmarker_${m}.task`;
+const EDGES = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[27,29],[29,31],[27,31],[24,26],[26,28],[28,30],[30,32],[28,32],[15,19],[16,20]];
+const PTS = [0,11,12,13,14,15,16,23,24,25,26,27,28,29,30,31,32];
+const POSE_ANG = [[11,13,15],[12,14,16],[23,25,27],[24,26,28]]; // elbows, knees
+const WIDTHS = [[2, '細'], [3.5, '中'], [6, '太']];
+const COLORS = ['#ffd166', '#ff5d73', '#3cc8ff', '#6ee7a0', '#ffffff'];
+const PRESETS = {
+  bat:   { name: '打撃', labels: ['始動', '足上げ', '着地', 'インパクト', 'フォロー'] },
+  pitch: { name: '投球', labels: ['始動', '足上げ', '着地', 'リリース', 'フォロー'] },
+  catch: { name: '捕手送球', labels: ['捕球', 'リリース', '到達'] },
+  run:   { name: '走塁', labels: ['スタート', '到達'] },
+  free:  { name: '自由入力', labels: [] }
+};
+const LABEL_COLORS = { '始動': '#c084fc', '足上げ': '#3cc8ff', '着地': '#6ee7a0', 'インパクト': '#ff5d73', 'リリース': '#ff5d73', 'フォロー': '#ffd166', '捕球': '#3cc8ff', '到達': '#ffd166', 'スタート': '#6ee7a0' };
+const markColor = l => LABEL_COLORS[l] || '#cbd5e1';
+
+// ---------- IndexedDB ----------
+const DB = (() => {
+  let p;
+  const open = () => p || (p = new Promise((res, rej) => {
+    const r = indexedDB.open('formcheck', 2); // v2 adds 'library' (the video list); existing stores are kept
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if (!d.objectStoreNames.contains('sessions')) d.createObjectStore('sessions', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('videos')) d.createObjectStore('videos');           // video data, keyed by video key
+      if (!d.objectStoreNames.contains('library')) d.createObjectStore('library', { keyPath: 'id' }); // video list: name, thumbnail, length…
+    };
+    r.onsuccess = () => res(r.result); r.onerror = () => { p = null; rej(r.error); };
+  }));
+  const tx = async (store, mode, fn) => {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const t = d.transaction(store, mode), r = fn(t.objectStore(store));
+      t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('aborted'));
+    });
+  };
+  return {
+    get: (s, k) => tx(s, 'readonly', st => st.get(k)),
+    count: (s, k) => tx(s, 'readonly', st => st.count(k)),
+    put: (s, v, k) => tx(s, 'readwrite', st => k === undefined ? st.put(v) : st.put(v, k)),
+    del: (s, k) => tx(s, 'readwrite', st => st.delete(k)),
+    all: s => tx(s, 'readonly', st => st.getAll()),
+    keys: s => tx(s, 'readonly', st => st.getAllKeys())
+  };
+})();
+
+// ---------- state ----------
+const S = {
+  mode: 'single', tool: 'select', color: COLORS[0], widthIdx: 1,
+  linked: false, offset: 0, pendingLink: null, active: 'A', rate: 1, loop: false,
+  angles: LS.get('angles', true), trail: true, trackAdv: LS.get('trackAdv', true), bAlpha: 0.5,
+  model: LS.get('model', 'full'), preset: LS.get('preset', 'bat'),
+  storeVideos: LS.get('storeVideos', true), sessionId: null, sessionName: '', moveTarget: 'B'
+};
+let dirty = true;
+
+function makeClip(id) {
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.preload = 'auto';
+  v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', ''); v.setAttribute('muted', '');
+  v.className = 'vid';
+  const c = { id, v, name: '', url: null, fps: 30, fpsEst: null, fpsAuto: true, timeFps: null, mirror: false, pose: false,
+    poseCache: new Map(), track: new Map(), tainted: false, loaded: false, place: { s: 1, tx: 0, ty: 0 }, markers: [],
+    blob: null, src: null, videoStored: false, pendingRestore: null, relink: null, status: '', dlToken: 0 };
+  v.addEventListener('loadedmetadata', () => { c.loaded = true; c.status = ''; applyCss(); updateUI(); });
+  v.addEventListener('loadeddata', () => { if (c.fpsEst == null) estimateFps(c); });
+  for (const ev of ['seeked', 'timeupdate']) v.addEventListener(ev, () => dirty = true);
+  for (const ev of ['play', 'pause', 'ended']) v.addEventListener(ev, updateUI);
+  v.addEventListener('error', () => { if (c.url) { c.status = ''; toast(`${id}: 動画を読み込めませんでした`, 4000); updateUI(); } });
+  return c;
+}
+const A = makeClip('A'), B = makeClip('B');
+const clips = { A, B };
+
+function makeStage(i) {
+  const el = $('#stage' + i), cv = $('.ink', el);
+  return { i, el, vp: $('.viewport', el), wrap: $('.wrap', el), cv, ctx: cv.getContext('2d'), empty: $('.empty', el),
+    shapes: [], undo: [], z: { s: 1, x: 0, y: 0 }, w: 1, h: 1, dpr: 1, sel: null, draft: null, ptrs: new Map(), g: null };
+}
+const ST = [makeStage(0), makeStage(1)];
+ST[0].wrap.appendChild(A.v);
+ST[1].wrap.appendChild(B.v);
+
+const primaryOf = st => st.i === 0 ? A : B;
+const clipsOf = st => st.i === 0 ? (S.mode === 'overlay' ? [A, B] : [A]) : (S.mode === 'side' ? [B] : []);
+const visibleStages = () => S.mode === 'side' ? ST : [ST[0]];
+const isShown = c => c === A || S.mode !== 'single';
+const activeStage = () => (S.mode === 'side' && S.active === 'B') ? ST[1] : ST[0];
+
+// ---------- geometry ----------
+function contentRect(c, st) {
+  const vw = c.v.videoWidth, vh = c.v.videoHeight;
+  if (!c.loaded || !vw) return { x: 0, y: 0, w: st.w, h: st.h };
+  const k = Math.min(st.w / vw, st.h / vh), w = vw * k, h = vh * k;
+  return { x: (st.w - w) / 2, y: (st.h - h) / 2, w, h };
+}
+const moveClip = () => clips[S.moveTarget] || B; // which video the 移動 tool moves (overlay)
+const placeOf = (c, st) => (S.mode === 'overlay' && st.i === 0) ? c.place : { s: 1, tx: 0, ty: 0 }; // overlay: each video can be moved/resized
+function clipToStage(c, st, nx, ny) {
+  const r = contentRect(c, st), p = placeOf(c, st), cx = st.w / 2, cy = st.h / 2;
+  let x = r.x + nx * r.w, y = r.y + ny * r.h;
+  if (c.mirror) x = 2 * cx - x;
+  return [cx + (x - cx) * p.s + p.tx * st.w, cy + (y - cy) * p.s + p.ty * st.h];
+}
+function stageToClip(c, st, x, y) {
+  const r = contentRect(c, st), p = placeOf(c, st), cx = st.w / 2, cy = st.h / 2;
+  x = cx + (x - p.tx * st.w - cx) / p.s; y = cy + (y - p.ty * st.h - cy) / p.s;
+  if (c.mirror) x = 2 * cx - x;
+  return [(x - r.x) / r.w, (y - r.y) / r.h];
+}
+// drawings are stored normalized to the stage's primary video rect
+function n2s(st, n) { const r = contentRect(primaryOf(st), st); return [r.x + n[0] * r.w, r.y + n[1] * r.h]; }
+function s2n(st, p) { const r = contentRect(primaryOf(st), st); return [(p[0] - r.x) / r.w, (p[1] - r.y) / r.h]; }
+function localPt(st, e) { const r = st.cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+const toStage = (st, q) => [(q[0] - st.z.x) / st.z.s, (q[1] - st.z.y) / st.z.s];
+function clampZoom(st) {
+  const z = st.z; z.s = clamp(z.s, 1, 12);
+  z.x = clamp(z.x, st.w * (1 - z.s), 0); z.y = clamp(z.y, st.h * (1 - z.s), 0);
+}
+function distSeg(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
+  const t = l ? clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l, 0, 1) : 0;
+  return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy);
+}
+function angleDeg(a, v, c) {
+  const a1 = Math.atan2(a[1] - v[1], a[0] - v[0]), a2 = Math.atan2(c[1] - v[1], c[0] - v[0]);
+  let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+  return { a1, d, deg: Math.abs(d) * 180 / Math.PI };
+}
+
+// ---------- layout ----------
+function resize(st) {
+  st.w = Math.max(1, st.vp.clientWidth); st.h = Math.max(1, st.vp.clientHeight);
+  st.dpr = window.devicePixelRatio || 1;
+  st.cv.width = Math.round(st.w * st.dpr); st.cv.height = Math.round(st.h * st.dpr);
+  clampZoom(st); applyCss(); if (POP) placePop();
+}
+function renderEmpty(st) {
+  const c = primaryOf(st);
+  const show = st.i === 0 ? !(A.loaded || (S.mode === 'overlay' && B.loaded)) : !B.loaded;
+  st.empty.style.display = show ? '' : 'none';
+  if (!show) return;
+  const msg = c.status ? esc(c.status)
+    : c.relink ? `保存した分析の動画<br><b>${esc(c.relink.src && c.relink.src.name)}</b><br>をもう一度選んでください`
+    : st.i === 0 ? '動画を読み込んでください' : '比較する動画（B）を読み込んでください';
+  $('.msg', st.empty).innerHTML = msg;
+  $('.row', st.empty).style.display = c.status ? 'none' : '';
+}
+function applyCss() {
+  for (const c of [A, B]) {
+    const p = S.mode === 'overlay' ? c.place : { s: 1, tx: 0, ty: 0 };
+    c.v.style.transform = `translate(${p.tx * 100}%,${p.ty * 100}%) scale(${p.s}) scaleX(${c.mirror ? -1 : 1})`;
+    c.v.style.opacity = (S.mode === 'overlay' && c === B) ? S.bAlpha : 1;
+  }
+  for (const st of ST) { st.wrap.style.transform = `translate(${st.z.x}px,${st.z.y}px) scale(${st.z.s})`; renderEmpty(st); }
+  dirty = true;
+}
+function setMode(m) {
+  S.mode = m; document.body.className = 'm-' + m;
+  const target = m === 'overlay' ? ST[0].wrap : ST[1].wrap;
+  if (B.v.parentNode !== target) { const t = B.v.currentTime, playing = !B.v.paused; target.appendChild(B.v); if (B.loaded) B.v.currentTime = t; if (playing) B.v.play().catch(() => {}); }
+  if (m === 'single') S.active = 'A';
+  if (m !== 'overlay' && S.tool === 'moveB') setTool('select');
+  for (const st of ST) { st.draft = null; st.sel = null; }
+  closePop(); applyCss(); updateUI();
+  requestAnimationFrame(() => ST.forEach(resize));
+}
+function setActive(id) { if (S.mode === 'single') id = 'A'; if (S.active !== id) { S.active = id; updateUI(); } }
+
+// ---------- rendering ----------
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function label(ctx, p, txt, lw, col = '#fff') {
+  ctx.save(); ctx.shadowBlur = 0;
+  ctx.font = `700 ${12 * lw}px system-ui,sans-serif`;
+  const w = ctx.measureText(txt).width + 8 * lw, h = 17 * lw;
+  ctx.fillStyle = 'rgba(0,0,0,.72)'; rr(ctx, p[0] - w / 2, p[1] - h / 2, w, h, 4 * lw); ctx.fill();
+  ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, p[0], p[1] + 0.5 * lw);
+  ctx.restore();
+}
+function dot(ctx, p, r, fill, stroke, lw) {
+  ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, Math.PI * 2); ctx.fillStyle = fill; ctx.fill();
+  ctx.lineWidth = 1.5 * lw; ctx.strokeStyle = stroke; ctx.stroke();
+}
+function drawAngle(ctx, a, v, c, col, lw) {
+  const { a1, d, deg } = angleDeg(a, v, c);
+  const R = Math.max(6 * lw, Math.min(30 * lw, 0.45 * Math.min(dist(a, v), dist(c, v))));
+  ctx.save(); ctx.shadowBlur = 0;
+  ctx.beginPath(); ctx.moveTo(v[0], v[1]); ctx.arc(v[0], v[1], R, a1, a1 + d, d < 0); ctx.closePath();
+  ctx.globalAlpha = .28; ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.arc(v[0], v[1], R, a1, a1 + d, d < 0); ctx.lineWidth = 1.5 * lw; ctx.strokeStyle = col; ctx.stroke();
+  ctx.restore();
+  const m = a1 + d / 2, off = R + 15 * lw;
+  label(ctx, [v[0] + Math.cos(m) * off, v[1] + Math.sin(m) * off], deg.toFixed(0) + '°', lw);
+}
+function shapePts(sh) {
+  switch (sh.type) { case 'line': case 'arrow': return [sh.a, sh.b]; case 'circle': return [sh.c, sh.e]; default: return sh.pts; }
+}
+const handlesOf = sh => sh.type === 'pen' ? [] : shapePts(sh);
+
+function drawShape(ctx, st, sh, lw, sel) {
+  const P = n => n2s(st, n);
+  ctx.save();
+  ctx.strokeStyle = sh.color; ctx.fillStyle = sh.color; ctx.lineWidth = sh.w * lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 3;
+  const t = sh.type;
+  if (t === 'pen') {
+    ctx.beginPath(); sh.pts.forEach((n, i) => { const p = P(n); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
+  } else if (t === 'line' || t === 'arrow') {
+    const a = P(sh.a), b = P(sh.b);
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    if (t === 'arrow') {
+      const an = Math.atan2(b[1] - a[1], b[0] - a[0]), L = (10 + sh.w * 2.5) * lw;
+      ctx.beginPath(); ctx.moveTo(b[0] + Math.cos(an) * sh.w * lw * .5, b[1] + Math.sin(an) * sh.w * lw * .5);
+      ctx.lineTo(b[0] - L * Math.cos(an - .45), b[1] - L * Math.sin(an - .45));
+      ctx.lineTo(b[0] - L * Math.cos(an + .45), b[1] - L * Math.sin(an + .45)); ctx.closePath(); ctx.fill();
+    } else if (sel) {
+      let deg = Math.abs(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI); if (deg > 90) deg = 180 - deg;
+      label(ctx, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 16 * lw], `水平から ${deg.toFixed(0)}°`, lw);
+    }
+  } else if (t === 'circle') {
+    const c = P(sh.c), e = P(sh.e);
+    ctx.beginPath(); ctx.arc(c[0], c[1], dist(c, e), 0, Math.PI * 2); ctx.stroke();
+  } else if (t === 'angle' || t === 'poly') {
+    const pts = sh.pts.map(P); if (sh.hover) pts.push(P(sh.hover));
+    ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
+    ctx.shadowBlur = 0;
+    for (let i = 1; i < pts.length - 1; i++) drawAngle(ctx, pts[i - 1], pts[i], pts[i + 1], sh.color, lw);
+    for (const p of pts) dot(ctx, p, (3 + sh.w * .7) * lw, sh.color, '#111', lw);
+  }
+  ctx.restore();
+  if (sel) {
+    ctx.save(); ctx.lineWidth = 1.5 * lw; ctx.strokeStyle = '#111'; ctx.fillStyle = '#fff';
+    const hs = handlesOf(sh).map(P), s = 9 * lw;
+    if (sh.type === 'pen') {
+      const pts = sh.pts.map(P), xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+      ctx.setLineDash([4 * lw, 4 * lw]); ctx.strokeStyle = '#fff';
+      ctx.strokeRect(Math.min(...xs) - 6 * lw, Math.min(...ys) - 6 * lw, Math.max(...xs) - Math.min(...xs) + 12 * lw, Math.max(...ys) - Math.min(...ys) + 12 * lw);
+    }
+    for (const p of hs) { ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s); ctx.strokeRect(p[0] - s / 2, p[1] - s / 2, s, s); }
+    ctx.restore();
+  }
+}
+
+function frameIdx(c) { return Math.max(0, Math.floor(c.v.currentTime * c.fps + 1e-4)); }
+const poseAt = c => c.poseCache.get(frameIdx(c));
+const clipColor = c => c === A ? '#ff5d73' : '#3cc8ff';
+
+// bat-head path: points tapped / auto-tracked per frame (independent of the skeleton)
+function drawTrack(ctx, st, c, lw) {
+  if (!c.track.size) return;
+  const keys = [...c.track.keys()].sort((a, b) => a - b), cur = frameIdx(c);
+  const gap = Math.max(3, Math.round(c.fps / 4)), col = c === A ? '#ffd166' : '#b6f0ff';
+  const P = k => { const q = c.track.get(k); return clipToStage(c, st, q.x, q.y); };
+  // smooth curve (Catmull-Rom) through the points; a long gap between frames starts a new segment
+  const path = keep => {
+    ctx.beginPath();
+    const segs = []; let seg = [], prev = null;
+    for (const k of keys) { if (!keep(k)) continue; if (prev != null && k - prev > gap) { segs.push(seg); seg = []; } seg.push(P(k)); prev = k; }
+    segs.push(seg);
+    for (const s of segs) {
+      if (!s.length) continue; ctx.moveTo(s[0][0], s[0][1]);
+      for (let i = 0; i < s.length - 1; i++) {
+        const p0 = s[i - 1] || s[i], p1 = s[i], p2 = s[i + 1], p3 = s[i + 2] || p2;
+        ctx.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6, p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+      }
+    }
+  };
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = col;
+  ctx.globalAlpha = .28; ctx.lineWidth = 2 * lw; path(() => true); ctx.stroke();
+  ctx.globalAlpha = 1; ctx.lineWidth = 3.5 * lw; ctx.shadowColor = 'rgba(0,0,0,.75)'; ctx.shadowBlur = 3; path(k => k <= cur); ctx.stroke();
+  ctx.shadowBlur = 0;
+  if (S.tool === 'track') for (const k of keys) {
+    const q = c.track.get(k); ctx.globalAlpha = k <= cur ? .95 : .4;
+    dot(ctx, P(k), (q.m ? 3.4 : 2.4) * lw, q.m ? '#fff' : col, '#111', lw);
+  }
+  const q = c.track.get(cur);
+  if (q) {
+    const p = P(cur); ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(p[0], p[1], 8 * lw, 0, Math.PI * 2); ctx.lineWidth = 2 * lw; ctx.strokeStyle = '#fff'; ctx.stroke();
+    dot(ctx, p, 3.5 * lw, col, '#111', lw);
+  }
+  ctx.restore();
+}
+function drawPose(ctx, st, c, lw) {
+  const lm = poseAt(c); if (!lm) return;
+  const col = clipColor(c), P = i => clipToStage(c, st, lm[i].x, lm[i].y);
+  ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.lineWidth = 3 * lw;
+  for (const [i, j] of EDGES) {
+    ctx.globalAlpha = Math.min(lm[i].v, lm[j].v) < .5 ? .3 : .95;
+    const a = P(i), b = P(j); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  }
+  const ls = P(11), rs = P(12), nose = P(0), mid = [(ls[0] + rs[0]) / 2, (ls[1] + rs[1]) / 2];
+  ctx.globalAlpha = .8; ctx.beginPath(); ctx.moveTo(mid[0], mid[1]); ctx.lineTo(nose[0], nose[1]); ctx.stroke();
+  for (const i of PTS) { ctx.globalAlpha = lm[i].v < .5 ? .4 : 1; dot(ctx, P(i), (i === 0 ? 5 : 4) * lw, '#fff', col, lw); }
+  ctx.globalAlpha = 1;
+  if (S.angles) for (const [a, b, cc] of POSE_ANG) {
+    if (Math.min(lm[a].v, lm[b].v, lm[cc].v) < .4) continue;
+    const pa = P(a), pb = P(b), pc = P(cc), { deg } = angleDeg(pa, pb, pc);
+    const u1 = [pa[0] - pb[0], pa[1] - pb[1]], u2 = [pc[0] - pb[0], pc[1] - pb[1]];
+    const n1 = Math.hypot(...u1) || 1, n2 = Math.hypot(...u2) || 1;
+    let u = [u1[0] / n1 + u2[0] / n2, u1[1] / n1 + u2[1] / n2]; const nu = Math.hypot(...u);
+    u = nu < 1e-3 ? [0, -1] : [u[0] / nu, u[1] / nu];
+    label(ctx, [pb[0] - u[0] * 20 * lw, pb[1] - u[1] * 20 * lw], deg.toFixed(0) + '°', lw, col);
+  }
+  ctx.restore();
+}
+function drawBadges(ctx, st, k, ox) {
+  const items = [];
+  for (const c of clipsOf(st)) {
+    if (!c.loaded) continue; const f = frameIdx(c);
+    for (const m of c.markers) if (mFrame(c, m) === f) items.push([c, m]);
+  }
+  if (!items.length) return;
+  ctx.save(); ctx.setTransform(k, 0, 0, k, k * ox, 0);
+  ctx.font = '700 13px system-ui,sans-serif'; ctx.textBaseline = 'middle';
+  let y = 10;
+  for (const [c, m] of items) {
+    const txt = (S.mode === 'overlay' ? c.id + ' ' : '') + m.label, w = ctx.measureText(txt).width + 26;
+    ctx.fillStyle = 'rgba(0,0,0,.75)'; rr(ctx, 10, y, w, 24, 12); ctx.fill();
+    ctx.fillStyle = markColor(m.label); ctx.beginPath(); ctx.arc(22, y + 12, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillText(txt, 32, y + 12.5); y += 30;
+  }
+  ctx.restore();
+}
+
+// draws overlays (and optionally the video frames, for export) of one stage
+function drawStage(st, ctx, k, ox, withVideo) {
+  const z = st.z, base = [k * z.s, 0, 0, k * z.s, k * (ox + z.x), k * z.y];
+  ctx.save();
+  if (withVideo) {
+    ctx.setTransform(k, 0, 0, k, k * ox, 0);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, st.w, st.h); ctx.beginPath(); ctx.rect(0, 0, st.w, st.h); ctx.clip();
+    for (const c of clipsOf(st)) {
+      if (!c.loaded) continue;
+      const p = placeOf(c, st), r = contentRect(c, st), cx = st.w / 2, cy = st.h / 2;
+      ctx.setTransform(...base); ctx.translate(cx + p.tx * st.w, cy + p.ty * st.h); ctx.scale(p.s * (c.mirror ? -1 : 1), p.s); ctx.translate(-cx, -cy);
+      ctx.globalAlpha = (S.mode === 'overlay' && c === B) ? S.bAlpha : 1;
+      ctx.drawImage(c.v, r.x, r.y, r.w, r.h);
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.setTransform(...base);
+  const lw = 1 / z.s;
+  for (const c of clipsOf(st)) if (c.pose && c.loaded) drawPose(ctx, st, c, lw);
+  for (const c of clipsOf(st)) if (S.trail && c.loaded) drawTrack(ctx, st, c, lw);
+  if (!withVideo && S.tool === 'moveB' && S.mode === 'overlay' && st.i === 0 && moveClip().loaded) { // outline of the video being moved
+    const c = moveClip(), a = clipToStage(c, st, 0, 0), b = clipToStage(c, st, 1, 1);
+    ctx.save(); ctx.strokeStyle = clipColor(c); ctx.lineWidth = 2 * lw; ctx.setLineDash([8 * lw, 6 * lw]);
+    ctx.strokeRect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])); ctx.restore();
+  }
+  for (const sh of st.shapes) drawShape(ctx, st, sh, lw, sh === st.sel);
+  if (st.draft) drawShape(ctx, st, st.draft, lw, false);
+  ctx.restore();
+  drawBadges(ctx, st, k, ox);
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  const playing = !A.v.paused || !B.v.paused;
+  if (playing) { syncDrift(); dirty = true; }
+  poseTick();
+  if (!dirty) return;
+  dirty = false;
+  for (const st of visibleStages()) {
+    st.ctx.setTransform(1, 0, 0, 1, 0, 0); st.ctx.clearRect(0, 0, st.cv.width, st.cv.height);
+    drawStage(st, st.ctx, st.dpr, 0, false);
+  }
+  updateTime();
+}
+
+// ---------- playback ----------
+const linkable = () => S.mode !== 'single' && A.loaded && B.loaded;
+const master = () => (S.linked && linkable()) ? A : clips[S.active];
+const targets = () => (S.linked && linkable()) ? [A, B] : [clips[S.active]];
+function snapT(c, t) {
+  const maxF = Math.max(0, Math.floor((c.v.duration || 0) * c.fps) - 1);
+  return (clamp(Math.floor(t * c.fps + 1e-4), 0, maxF) + .5) / c.fps;
+}
+function seek(c, t) { if (c.loaded) c.v.currentTime = snapT(c, t); dirty = true; }
+function followB() { if (S.linked && linkable()) seek(B, A.v.currentTime + S.offset); }
+function togglePlay() {
+  const m = master(); if (!m.loaded) return toast('動画を読み込んでください');
+  stopFling();
+  if (m.v.paused) { for (const c of targets()) { c.v.playbackRate = S.rate; c.v.play().catch(() => {}); } }
+  else { for (const c of targets()) c.v.pause(); seek(m, m.v.currentTime); followB(); }
+}
+function step(n) {
+  const m = master(); if (!m.loaded) return;
+  stopFling();
+  for (const c of targets()) c.v.pause();
+  seek(m, (frameIdx(m) + n + .5) / m.fps); followB();
+}
+let lastFix = 0;
+function syncDrift() {
+  if (!(S.linked && linkable()) || A.v.paused) { if (S.linked && linkable() && A.v.paused && !B.v.paused) B.v.pause(); return; }
+  const want = A.v.currentTime + S.offset;
+  if (want < 0 || want > B.v.duration) { if (!B.v.paused) B.v.pause(); return; }
+  if (B.v.paused) { B.v.playbackRate = S.rate; B.v.currentTime = want; B.v.play().catch(() => {}); return; }
+  const now = performance.now();
+  if (Math.abs(B.v.currentTime - want) > .1 && now - lastFix > 500) { B.v.currentTime = want; lastFix = now; }
+}
+function setRate(r) { S.rate = r; A.v.playbackRate = r; B.v.playbackRate = r; updateUI(); }
+const totalFrames = c => Math.max(1, Math.floor((c.v.duration || 0) * c.fps));
+let ticksKey = '';
+function updateTime() {
+  const m = master(), ov = $('#overview');
+  drawJog();
+  if (!m.loaded || !isFinite(m.v.duration)) { $('#tlabel').textContent = '--'; $('.fill', ov).style.width = '0'; $('.head', ov).style.display = 'none'; return; }
+  const total = totalFrames(m), f = frameIdx(m), frac = total > 1 ? Math.min(1, f / (total - 1)) : 0;
+  $('.fill', ov).style.width = frac * 100 + '%';
+  const hd = $('.head', ov); hd.style.display = ''; hd.style.left = frac * 100 + '%';
+  const key = `${m.id}|${total}|${m.markers.map(x => x.label + x.t).join()}`;
+  if (key !== ticksKey) renderTicks();
+  let txt = `${m.id} ${m.v.currentTime.toFixed(2)}s · ${f + 1}/${total}`;
+  if (S.linked && linkable()) txt += ` · B ${B.v.currentTime.toFixed(2)}s`;
+  $('#tlabel').textContent = txt;
+}
+function renderTicks() {
+  const m = master(), el = $('#ticks'); el.innerHTML = ''; ticksKey = '';
+  if (!m.loaded || !isFinite(m.v.duration)) return;
+  const N = totalFrames(m);
+  ticksKey = `${m.id}|${N}|${m.markers.map(x => x.label + x.t).join()}`;
+  for (const mk of m.markers) {
+    const d = document.createElement('div'); d.className = 'tick';
+    d.style.left = (N > 1 ? mFrame(m, mk) / (N - 1) * 100 : 0) + '%'; d.style.background = markColor(mk.label);
+    el.appendChild(d);
+  }
+}
+
+// ---------- position bar (tap/drag anywhere to jump) ----------
+(() => {
+  const ov = $('#overview'); let drag = false;
+  const go = e => {
+    const m = master(); if (!m.loaded) return;
+    const r = ov.getBoundingClientRect(), frac = clamp((e.clientX - r.left) / r.width, 0, 1);
+    for (const c of targets()) c.v.pause();
+    stopFling(); seek(m, (Math.round(frac * (totalFrames(m) - 1)) + .5) / m.fps); followB();
+  };
+  ov.addEventListener('pointerdown', e => { e.preventDefault(); closePop(); try { ov.setPointerCapture(e.pointerId); } catch (_) {} drag = true; go(e); });
+  ov.addEventListener('pointermove', e => { if (drag) go(e); });
+  for (const ev of ['pointerup', 'pointercancel']) ov.addEventListener(ev, () => drag = false);
+})();
+
+// ---------- scrub strip (swipe like a ruler; flick to keep going; tap left/right = 1 frame) ----------
+const JOG = { cv: $('#jog'), pos: null, drag: null, vel: 0, raf: 0, samples: [] };
+const jogPx = m => m.fps >= 200 ? 5 : m.fps >= 100 ? 7 : 12; // pixels per frame
+function jogSetPos(pos) {
+  const m = master(); if (!m.loaded) return false;
+  const N = totalFrames(m), p = clamp(pos, 0, N - 1);
+  JOG.pos = p;
+  const f = Math.round(p);
+  if (f !== frameIdx(m)) { seek(m, (f + .5) / m.fps); followB(); }
+  dirty = true;
+  return p === pos;
+}
+function stopFling() { cancelAnimationFrame(JOG.raf); JOG.raf = 0; JOG.vel = 0; if (!JOG.drag) JOG.pos = null; }
+function fling(vel) {
+  JOG.vel = vel; let last = performance.now();
+  const tick = now => {
+    const dt = Math.min(50, now - last); last = now;
+    const inside = jogSetPos(JOG.pos + JOG.vel * dt);
+    JOG.vel *= Math.pow(.994, dt);
+    if (!inside || Math.abs(JOG.vel) < .004) { JOG.raf = 0; JOG.pos = null; dirty = true; return; }
+    JOG.raf = requestAnimationFrame(tick);
+  };
+  JOG.raf = requestAnimationFrame(tick);
+}
+JOG.cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); closePop();
+  const m = master(); if (!m.loaded) return;
+  try { JOG.cv.setPointerCapture(e.pointerId); } catch (_) {}
+  stopFling();
+  for (const c of targets()) c.v.pause();
+  JOG.pos = frameIdx(m);
+  JOG.drag = { x0: e.clientX, x: e.clientX, t0: performance.now(), moved: 0 };
+  JOG.samples = [[performance.now(), e.clientX]];
+});
+JOG.cv.addEventListener('pointermove', e => {
+  const d = JOG.drag; if (!d) return;
+  const m = master(), dx = e.clientX - d.x; d.x = e.clientX; d.moved = Math.max(d.moved, Math.abs(e.clientX - d.x0));
+  jogSetPos(JOG.pos - dx / jogPx(m));
+  const now = performance.now(); JOG.samples.push([now, e.clientX]);
+  while (JOG.samples.length > 2 && now - JOG.samples[0][0] > 100) JOG.samples.shift();
+});
+function jogUp(e, cancel) {
+  const d = JOG.drag; if (!d) return; JOG.drag = null;
+  const m = master();
+  if (!cancel && d.moved < 6 && performance.now() - d.t0 < 350) {
+    const r = JOG.cv.getBoundingClientRect(); JOG.pos = null; step(e.clientX < r.left + r.width / 2 ? -1 : 1); return;
+  }
+  const s = JOG.samples, a = s[0], b = s[s.length - 1], dt = b[0] - a[0];
+  const v = dt > 0 && performance.now() - b[0] < 80 ? (b[1] - a[1]) / dt : 0; // px per ms
+  if (!cancel && Math.abs(v) > .35) fling(-v / jogPx(m)); else { JOG.pos = null; dirty = true; }
+}
+JOG.cv.addEventListener('pointerup', e => jogUp(e, false));
+JOG.cv.addEventListener('pointercancel', e => jogUp(e, true));
+JOG.cv.addEventListener('wheel', e => { e.preventDefault(); const m = master(); if (!m.loaded) return; for (const c of targets()) c.v.pause(); step((e.deltaX || e.deltaY) > 0 ? 1 : -1); }, { passive: false });
+function drawJog() {
+  const cv = JOG.cv, w = cv.clientWidth, h = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+  if (!w) return;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  const m = master(), cx = w / 2;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (!m.loaded || !isFinite(m.v.duration)) {
+    ctx.fillStyle = '#5d6672'; ctx.font = '12px system-ui,sans-serif'; ctx.fillText('‹  左右にスワイプでコマ送り  ›', cx, h / 2); return;
+  }
+  const px = jogPx(m), N = totalFrames(m);
+  const pos = JOG.pos != null ? JOG.pos : clamp(m.v.currentTime * m.fps - .5, 0, N - 1);
+  const xOf = f => cx + (f - pos) * px;
+  // outside the clip
+  ctx.fillStyle = 'rgba(255,255,255,.035)';
+  const xs = xOf(-.5), xe = xOf(N - .5);
+  if (xs > 0) ctx.fillRect(0, 0, xs, h);
+  if (xe < w) ctx.fillRect(xe, 0, w - xe, h);
+  const every = px >= 10 ? 10 : px >= 7 ? 20 : 50, mid = every / 2;
+  const f0 = Math.max(0, Math.floor(pos - cx / px) - 1), f1 = Math.min(N - 1, Math.ceil(pos + cx / px) + 1);
+  ctx.font = '10px system-ui,sans-serif';
+  for (let f = f0; f <= f1; f++) {
+    const x = Math.round(xOf(f)) + .5, major = f % every === 0, half = f % mid === 0;
+    const len = major ? 18 : half ? 12 : 7;
+    ctx.strokeStyle = major ? '#9aa4b2' : half ? '#5f6976' : '#3a424d'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, h - 2); ctx.lineTo(x, h - 2 - len); ctx.stroke();
+    if (major) { ctx.fillStyle = '#7d8794'; ctx.fillText(String(f + 1), x, 11); }
+  }
+  // markers
+  for (const mk of m.markers) {
+    const x = xOf(mFrame(m, mk)); if (x < -40 || x > w + 40) continue;
+    ctx.strokeStyle = markColor(mk.label); ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(x, h - 2); ctx.lineTo(x, 20); ctx.stroke();
+    ctx.font = '700 10px system-ui,sans-serif'; const tw = ctx.measureText(mk.label).width + 8;
+    ctx.fillStyle = 'rgba(0,0,0,.8)'; rr(ctx, x - tw / 2, 3, tw, 15, 4); ctx.fill();
+    ctx.fillStyle = markColor(mk.label); ctx.fillText(mk.label, x, 11); ctx.font = '10px system-ui,sans-serif';
+  }
+  // edge fade + playhead
+  const g = ctx.createLinearGradient(0, 0, w, 0);
+  g.addColorStop(0, 'rgba(11,14,18,1)'); g.addColorStop(.12, 'rgba(11,14,18,0)'); g.addColorStop(.88, 'rgba(11,14,18,0)'); g.addColorStop(1, 'rgba(11,14,18,1)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4fc3f7'; ctx.fillRect(cx - 1.5, 0, 3, h);
+  ctx.beginPath(); ctx.moveTo(cx - 6, 0); ctx.lineTo(cx + 6, 0); ctx.lineTo(cx, 7); ctx.closePath(); ctx.fill();
+}
+new ResizeObserver(() => { dirty = true; }).observe(JOG.cv);
+
+async function estimateFps(c) {
+  const v = c.v, url = c.url;
+  if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype)) { c.fpsEst = 30; finishLoad(c); return; }
+  const times = [];
+  v.playbackRate = .2;
+  await new Promise(res => {
+    let done = false; const fin = () => { if (!done) { done = true; res(); } };
+    const cb = (now, md) => { if (done) return; times.push(md.mediaTime); if (times.length < 10) v.requestVideoFrameCallback(cb); else fin(); };
+    v.requestVideoFrameCallback(cb); v.play().catch(fin); setTimeout(fin, 2500);
+  });
+  v.pause(); v.playbackRate = S.rate;
+  if (url !== c.url) return;
+  let md = Infinity;
+  for (let i = 1; i < times.length; i++) { const d = times[i] - times[i - 1]; if (d > 1e-4 && d < md) md = d; }
+  let f = 30;
+  if (isFinite(md)) {
+    f = 1 / md;
+    const C = [15, 24, 25, 30, 48, 50, 60, 90, 100, 120, 240, 480];
+    const best = C.reduce((a, b) => Math.abs(b - f) < Math.abs(a - f) ? b : a);
+    f = Math.abs(best - f) / f < .1 ? best : Math.round(f);
+  }
+  c.fpsEst = f; if (c.fpsAuto) c.fps = f;
+  c.poseCache.clear();
+  finishLoad(c);
+}
+// called once the video is ready and its fps known; applies a saved analysis if one is pending
+function finishLoad(c) {
+  const r = c.pendingRestore;
+  if (!r) { seek(c, 0); updateUI(); return; }
+  c.pendingRestore = null;
+  c.fpsAuto = r.fpsAuto !== false;
+  c.fps = c.fpsAuto ? (c.fpsEst || r.fps || 30) : r.fps;
+  c.timeFps = r.timeFps || null; c.mirror = !!r.mirror;
+  c.place = r.place ? { ...r.place } : { s: 1, tx: 0, ty: 0 };
+  c.markers = (r.markers || []).map(m => ({ ...m }));
+  c.poseCache = new Map(r.fps === c.fps ? (r.pose || []) : []);
+  c.track = new Map(r.track || []); if (r.fps && r.fps !== c.fps) remapTrack(c, r.fps);
+  c.pose = !!r.poseOn && !c.tainted;
+  if (c.pose) getLM().catch(() => {});
+  seek(c, r.time || 0);
+  tryLink(); applyCss(); updateUI();
+}
+function tryLink() {
+  if (S.pendingLink != null && linkable() && !A.pendingRestore && !B.pendingRestore) {
+    S.offset = S.pendingLink; S.linked = true; S.pendingLink = null; followB(); updateUI();
+  }
+}
+
+// ---------- loading ----------
+function loadInto(c, url, name, opts = {}) {
+  for (const x of [A, B]) x.v.pause();
+  if (c.url && c.url.startsWith('blob:')) URL.revokeObjectURL(c.url);
+  Object.assign(c, { url, name, loaded: false, tainted: !!opts.tainted, fpsEst: null, fpsAuto: true, fps: 30, timeFps: null,
+    place: { s: 1, tx: 0, ty: 0 }, markers: [], blob: opts.blob || null, src: opts.src || { kind: 'url', name },
+    videoStored: !!opts.videoStored, pendingRestore: opts.restore || null, relink: null, status: '読み込み中…' });
+  c.poseCache = new Map(); c.track = new Map(); trackUndo = trackUndo.filter(u => u.c !== c);
+  if (c.tainted) c.pose = false;
+  if (!opts.restore) S.linked = false;
+  c.v.src = url; c.v.load();
+  if (c === B && S.mode === 'single') setMode('side');
+  setActive(c.id);
+  if (!opts.restore) for (const st of ST) if (primaryOf(st) === c) st.z = { s: 1, x: 0, y: 0 };
+  hideResume(); closeLibrary(); applyCss(); updateUI();
+}
+function clearClip(c) {
+  c.v.pause(); c.dlToken++;
+  if (c.url && c.url.startsWith('blob:')) URL.revokeObjectURL(c.url);
+  c.url = null; c.v.removeAttribute('src'); c.v.load();
+  Object.assign(c, { loaded: false, name: '', blob: null, src: null, markers: [], relink: null, pendingRestore: null,
+    videoStored: false, fpsEst: null, fpsAuto: true, fps: 30, timeFps: null, status: '', tainted: false, place: { s: 1, tx: 0, ty: 0 } });
+  c.poseCache = new Map(); c.track = new Map(); trackUndo = trackUndo.filter(u => u.c !== c); S.linked = false;
+  applyCss(); updateUI();
+}
+let fileTarget = 'A';
+function pickFile(id) { fileTarget = id; closePop(); $('#fileIn').click(); }
+$('#fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (f) loadFileInto(clips[fileTarget], f);
+});
+function loadFileInto(c, f) {
+  const src = { kind: 'file', name: f.name, size: f.size, lastModified: f.lastModified };
+  let restore = null;
+  if (c.relink && !c.loaded) {
+    const rs = c.relink.src || {};
+    if (rs.name === f.name || (rs.size && rs.size === f.size) || confirm(`保存時の動画（${rs.name}）と違うファイルのようです。このファイルで分析を開きますか？`)) restore = c.relink;
+  }
+  loadInto(c, URL.createObjectURL(f), f.name, { blob: f, src, restore });
+  addToLibrary(f, { id: fileKey(f), name: f.name, size: f.size, lastModified: f.lastModified, kind: 'file' }) // keep it in the video list
+    .then(r => { if (r && c.blob === f) { c.videoStored = true; c.src.videoKey = r.id; } });
+}
+
+// ---------- video library: videos kept on this device (IndexedDB), pick one to check, another to compare ----------
+const LIB = { open: false, mode: 'A' }; // mode = the slot a tap loads into: 'A' = start checking, 'B' = compare
+let lastSess = null;                     // autosaved previous analysis (offered at the top of the list)
+const isVideoFile = f => /^video\//.test(f.type) || /\.(mp4|mov|m4v|webm|mkv|avi|3gp)$/i.test(f.name);
+const fileKey = f => `file:${f.name}|${f.size}|${f.lastModified}`; // same key the saved analyses use (videoKeyOf)
+const fmtDur = s => isFinite(s) && s > 0 ? `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}` : '';
+const fmtSize = b => b >= 1073741824 ? (b / 1073741824).toFixed(1) + 'GB' : (b / 1048576).toFixed(b < 10485760 ? 1 : 0) + 'MB';
+async function libList() {
+  try { return (await DB.all('library')).sort((a, b) => (b.used || b.added) - (a.used || a.added)); } catch (e) { return null; }
+}
+async function makeVideoThumb(blob) { // thumbnail at 30% of the video, plus its length and size
+  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.preload = 'auto';
+  v.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+  document.body.appendChild(v); const url = URL.createObjectURL(blob); v.src = url;
+  try {
+    await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = rej; setTimeout(rej, 10000); });
+    await seekAwait(v, Math.max(0, Math.min(v.duration * .3, v.duration - .1)) || 0);
+    const k = Math.min(1, 240 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(v.videoWidth * k)); cv.height = Math.max(1, Math.round(v.videoHeight * k));
+    cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+    return { thumb: cv.toDataURL('image/jpeg', .72), duration: v.duration, w: v.videoWidth, h: v.videoHeight };
+  } catch (e) { return { thumb: null }; }
+  finally { URL.revokeObjectURL(url); v.remove(); }
+}
+async function addToLibrary(blob, meta) {
+  try {
+    const ex = await DB.get('library', meta.id);
+    if (!(await DB.count('videos', meta.id))) await DB.put('videos', blob, meta.id);
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    const rec = Object.assign({ added: Date.now() }, ex || {}, meta, { used: Date.now() });
+    if (!rec.thumb) Object.assign(rec, await makeVideoThumb(blob));
+    await DB.put('library', rec);
+    renderLibrary();
+    return rec;
+  } catch (e) { toast('動画をこの端末に保存できませんでした（容量不足の可能性）', 4500); return null; }
+}
+async function importFiles(files) {
+  const vids = [...files].filter(isVideoFile);
+  if (!vids.length) return toast('動画ファイルを選んでください（mp4 / mov など）');
+  let i = 0;
+  for (const f of vids) { toast(`動画一覧に追加中… ${++i}/${vids.length}`, 30000); await addToLibrary(f, { id: fileKey(f), name: f.name, size: f.size, lastModified: f.lastModified, kind: 'file' }); }
+  toast(vids.length === 1 ? '追加しました。動画をタップするとチェックを始めます' : `${vids.length}本を追加しました`, 3500);
+}
+async function openFromLibrary(rec, target) {
+  let blob = null; try { blob = await DB.get('videos', rec.id); } catch (e) {}
+  if (!blob) return toast('この動画のデータが見つかりません。もう一度追加してください', 4500);
+  const c = clips[target];
+  rec.used = Date.now(); DB.put('library', rec).catch(() => {});
+  const restore = c.relink && !c.loaded && c.relink.src && c.relink.src.name === rec.name ? c.relink : null;
+  loadInto(c, URL.createObjectURL(blob), rec.name, { blob, videoStored: true, restore,
+    src: { kind: rec.kind || 'file', name: rec.name, size: rec.size, lastModified: rec.lastModified, driveId: rec.driveId, videoKey: rec.id } });
+}
+function openLibrary(mode) {
+  LIB.open = true; LIB.mode = mode === 'B' ? 'B' : 'A';
+  closePop(); $$('.modal').forEach(m => m.classList.remove('open'));
+  $('#library').hidden = false; renderLibrary();
+}
+function closeLibrary() { if (!LIB.open) return; LIB.open = false; $('#library').hidden = true; }
+async function renderLibrary() {
+  if (!LIB.open) return;
+  const pickB = LIB.mode === 'B';
+  $('#libTitle').textContent = pickB ? '比較する動画（B）を選ぶ' : '動画一覧';
+  $('#libAdd').textContent = pickB ? 'ファイルから選ぶ' : '＋ 動画を追加';
+  $('#libClose').hidden = !(A.loaded || B.loaded);
+  const rs = $('#libResume'); rs.hidden = pickB || !lastSess || A.loaded || B.loaded;
+  if (!rs.hidden) $('#libResumeTxt').textContent = '前回の分析: ' + sessNames(lastSess).join(' / ');
+  const list = await libList(), grid = $('#libGrid');
+  if (list === null) { grid.innerHTML = '<div class="libEmpty">このブラウザでは端末に保存できません（プライベートモード等）。「ファイルから選ぶ」で直接開けます。</div>'; return; }
+  const inA = A.loaded ? videoKeyOf(A) : null, inB = B.loaded ? videoKeyOf(B) : null;
+  grid.innerHTML = !list.length
+    ? `<div class="libEmpty"><p><b>まだ動画がありません</b></p><p>「＋ 動画を追加」を押すか、ここに動画ファイルをドラッグ＆ドロップしてください。<br>追加した動画はこの端末に保存され、次からはここからすぐ選べます。</p><p class="small">Google Drive の動画は、スマホなら「＋ 動画を追加」→「Google Drive」、パソコンなら「パソコン版 Google ドライブ」（エクスプローラーに表示されるドライブ）から選べます。</p></div>`
+    : list.map(r => `<div class="vcard" data-id="${esc(r.id)}">
+        <div class="th">${r.thumb ? `<img src="${r.thumb}" alt="">` : ic('image')}${fmtDur(r.duration) ? `<span class="dur">${fmtDur(r.duration)}</span>` : ''}
+          ${r.id === inA ? '<span class="tag tA badge">A</span>' : r.id === inB ? '<span class="tag tB badge">B</span>' : ''}</div>
+        <div class="nm" title="${esc(r.name)}">${esc(r.name)}</div>
+        <div class="meta">${fmtDate(r.added)} · ${fmtSize(r.size || 0)}</div>
+        <div class="acts">${pickB ? '<button class="primary" data-act="B">比較に使う</button>'
+          : `<button class="primary" data-act="A">チェック</button>${A.loaded && r.id !== inA ? '<button data-act="B">Bで比較</button>' : ''}`}
+          <button class="del" data-act="del" title="一覧から削除" aria-label="削除">${ic('trash')}</button></div>
+      </div>`).join('');
+  grid.onclick = async e => {
+    const card = e.target.closest('.vcard'); if (!card) return;
+    const b = e.target.closest('[data-act]'), act = b ? b.dataset.act : LIB.mode, rec = list.find(r => r.id === card.dataset.id);
+    if (!rec) return;
+    if (act === 'del') {
+      if (!confirm(`「${rec.name}」を動画一覧から削除しますか？`)) return;
+      await DB.del('library', rec.id); await gcVideos(); renderLibrary(); return;
+    }
+    openFromLibrary(rec, act);
+  };
+  try { const est = await navigator.storage.estimate(); $('#libSub').textContent = `${list.length}本・この端末に保存（使用量 ${fmtSize(est.usage || 0)}／目安 ${fmtSize(est.quota || 0)}）`; }
+  catch (e) { $('#libSub').textContent = `${list.length}本`; }
+}
+
+// ---------- drag & drop: video files onto the window ----------
+(() => {
+  const ov = $('#dropOverlay'); let depth = 0;
+  const isVideo = isVideoFile;
+  const hasDrop = e => { const t = e.dataTransfer && [...e.dataTransfer.types]; return t && (t.includes('Files') || t.includes('text/uri-list') || t.includes('text/plain')); };
+  const zoneAt = e => { const z = e.target.closest && e.target.closest('[data-dz]'); return z ? z.dataset.dz : null; };
+  const show = on => { ov.hidden = !on; ov.classList.toggle('lib', LIB.open && LIB.mode === 'A'); if (!on) { depth = 0; $$('[data-dz]', ov).forEach(z => z.classList.remove('hot')); } };
+  window.addEventListener('dragenter', e => { if (!hasDrop(e)) return; e.preventDefault(); depth++; show(true); });
+  window.addEventListener('dragleave', e => { if (!hasDrop(e)) return; if (--depth <= 0) show(false); });
+  window.addEventListener('dragover', e => {
+    if (!hasDrop(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+    const z = zoneAt(e); $$('[data-dz]', ov).forEach(d => d.classList.toggle('hot', d.dataset.dz === z));
+  });
+  window.addEventListener('drop', e => {
+    if (!hasDrop(e)) return; e.preventDefault();
+    const first = zoneAt(e) || 'A'; show(false); closePop();
+    $$('.modal').forEach(m => m.classList.remove('open'));
+    const files = [...(e.dataTransfer.files || [])];
+    if (files.length) {
+      const vids = files.filter(isVideo);
+      if (!vids.length) return toast('動画ファイルをドロップしてください（mp4 / mov など）');
+      if (LIB.open && LIB.mode === 'A') return importFiles(vids);              // video list open: just add them to it
+      if (LIB.open && LIB.mode === 'B') return loadFileInto(B, vids[0]);       // picking a video to compare
+      const order = first === 'A' ? ['A', 'B'] : ['B', 'A'];
+      vids.slice(0, 2).forEach((f, i) => loadFileInto(clips[order[i]], f));
+      if (vids.length > 2) toast('読み込めるのは2本（A・B）までです');
+      return;
+    }
+    toast('動画ファイルをドロップしてください（mp4 / mov など）'); // links/text: not loadable (and the browser mustn't navigate away)
+  });
+})();
+
+// ---------- pose ----------
+let LM = null, lmLoading = null, analyzing = null;
+function getLM() {
+  if (LM) return Promise.resolve(LM);
+  if (lmLoading) return lmLoading;
+  lmLoading = (async () => {
+    toast('骨格モデルを読み込み中…', 15000);
+    const mod = await import(MP + '/vision_bundle.mjs');
+    const fs = await mod.FilesetResolver.forVisionTasks(MP + '/wasm');
+    const opts = d => ({ baseOptions: { modelAssetPath: MODEL(S.model), delegate: d }, runningMode: 'IMAGE', numPoses: 3, // several people (catcher, umpire): pickPose keeps the batter
+      minPoseDetectionConfidence: .5, minPosePresenceConfidence: .5, minTrackingConfidence: .5 });
+    try { LM = await mod.PoseLandmarker.createFromOptions(fs, opts('GPU')); }
+    catch (e) { LM = await mod.PoseLandmarker.createFromOptions(fs, opts('CPU')); }
+    toast('骨格検出の準備ができました'); dirty = true;
+    return LM;
+  })();
+  lmLoading.catch(e => {
+    lmLoading = null;
+    // the model (~15MB) comes from cdn.jsdelivr.net and storage.googleapis.com; say why it couldn't be fetched
+    const local = !/^https?:$/.test(location.protocol), phone = /iPhone|iPad|Android|Mobi/i.test(navigator.userAgent);
+    const why = local && phone
+      ? 'スマホでHTMLファイルを直接開くと、骨格モデルをダウンロードできません。インターネット上のFormCheck（https://〜のURL）から開いてください。'
+      : !navigator.onLine ? 'インターネットにつながっていません。接続してから、もう一度押してください。'
+      : '骨格モデルをダウンロードできませんでした。通信状態、Wi-Fiのフィルター（学校・会社など）、広告ブロッカーを確認して、もう一度押してください。';
+    toast(why + '（詳細: ' + (e && e.message || e) + '）', 9000);
+  });
+  return lmLoading;
+}
+// With several people in view, keep following the same person as in the nearest analysed frame;
+// if there is none close by (start, or a camera cut), take the tallest standing person (the batter, not the crouching catcher).
+function pickPose(c, f, list, fresh) {
+  if (!list || !list.length) return null;
+  const ar = (c.v.videoHeight || 1) / (c.v.videoWidth || 1);
+  const hip = l => [(l[23].x + l[24].x) / 2, (l[23].y + l[24].y) / 2 * ar];
+  const height = l => (Math.max(l[27].y, l[28].y) - Math.min(l[0].y, l[11].y, l[12].y)) * ar;
+  let ref = null;
+  if (!fresh) for (let d = 1; d <= 15 && !ref; d++) for (const k of [f - d, f + d]) { const r = c.poseCache.get(k); if (r) { ref = r; break; } }
+  if (ref) {
+    const rh = hip(ref); let best = null, bd = Infinity;
+    for (const l of list) { const h = hip(l), dd = Math.hypot(h[0] - rh[0], h[1] - rh[1]); if (dd < bd) { bd = dd; best = l; } }
+    return bd < .12 ? best : null; // the person we follow isn't found (e.g. turned away): don't jump to the catcher
+  }
+  return list.reduce((a, b) => height(b) > height(a) ? b : a);
+}
+function detectInto(c, f, fresh) { // fresh: first frame after a camera cut (don't match people from the previous shot)
+  try {
+    const r = LM.detect(c.v), l = pickPose(c, f, r.landmarks, fresh);
+    c.poseCache.set(f, l ? l.map(p => ({ x: p.x, y: p.y, v: p.visibility == null ? 1 : p.visibility })) : null);
+  } catch (e) {
+    console.warn(e);
+    if (e && e.name === 'SecurityError') { c.tainted = true; c.pose = false; toast('この動画は骨格検出できません', 4000); updateUI(); }
+    else c.poseCache.set(f, null);
+  }
+}
+function poseTick() {
+  if (!LM || analyzing || batJob) return;
+  for (const c of [A, B]) {
+    if (!c.pose || !c.loaded || c.tainted || c.pendingRestore || !isShown(c) || c.v.readyState < 2 || c.v.seeking) continue;
+    const f = frameIdx(c); if (c.poseCache.has(f)) continue;
+    detectInto(c, f); dirty = true; return; // one detection per frame tick keeps the UI responsive
+  }
+}
+function seekAwait(v, t) {
+  return new Promise(res => { let done = false; const fin = () => { if (!done) { done = true; v.removeEventListener('seeked', fin); res(); } };
+    v.addEventListener('seeked', fin); v.currentTime = t; setTimeout(fin, 3000); });
+}
+async function analyzeAll(c) {
+  if (analyzing) { analyzing.cancel = true; return; }
+  if (!c.loaded || c.tainted) return;
+  await getLM();
+  for (const x of [A, B]) x.v.pause();
+  const job = { cancel: false }; analyzing = job; updateUI();
+  const t0 = c.v.currentTime, n = Math.floor(c.v.duration * c.fps);
+  for (let f = 0; f < n && !job.cancel; f++) {
+    if (c.poseCache.has(f)) continue;
+    await seekAwait(c.v, (f + .5) / c.fps);
+    detectInto(c, f);
+    if (f % 4 === 0) { toast(`解析中 ${Math.round(f / n * 100)}%（「メニュー」で中止）`, 1500); dirty = true; }
+  }
+  analyzing = null; await seekAwait(c.v, t0);
+  toast(job.cancel ? '解析を中止しました' : '骨格の解析が完了しました'); dirty = true; updateUI();
+}
+
+// ---------- bat-head path ----------
+function remapTrack(c, oldFps) {
+  if (!c.track.size || !oldFps || oldFps === c.fps) return;
+  const m = new Map();
+  for (const [f, q] of c.track) m.set(Math.floor((f + .5) / oldFps * c.fps + 1e-4), q);
+  c.track = m;
+}
+const AN = { cv: document.createElement('canvas') };
+function grabGray(c) {
+  const v = c.v, k = Math.min(1, 480 / Math.max(v.videoWidth, v.videoHeight));
+  const w = Math.max(1, Math.round(v.videoWidth * k)), h = Math.max(1, Math.round(v.videoHeight * k));
+  if (AN.cv.width !== w || AN.cv.height !== h) { AN.cv.width = w; AN.cv.height = h; AN.ctx = null; }
+  const ctx = AN.ctx || (AN.ctx = AN.cv.getContext('2d', { willReadFrequently: true }));
+  ctx.drawImage(v, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h).data, g = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < g.length; i++, j += 4) g[i] = d[j] * .299 + d[j + 1] * .587 + d[j + 2] * .114;
+  return { g, w, h };
+}
+// Automatic bat-head path, anchored on the hands from the skeleton (the part that tracks reliably).
+// 1. Per frame the pose gives both hand positions and the body size (torso length T).
+// 2. Direction of the bat: the two hands sit on the bat, so bottom hand -> top hand points along it. That is the main
+//    guide; which hand is on top (right/left-handed batter) is decided from the video. An image search from the hands
+//    (a thin line that differs from both sides, plus motion) fine-tunes the direction where the bat is visible.
+// 3. A smoothing pass over all frames picks one direction per frame. One bat length is used for the whole clip.
+// Points you tapped are treated as correct and steer the result.
+const BK = 120, BS = 64;          // directions (3° each), samples along each ray
+const BD0 = .25, BD1 = 2.4;       // ray range, in torso lengths
+const bdAt = s => BD0 + (BD1 - BD0) * s / (BS - 1);
+const angK = th => ((Math.round(th / (2 * Math.PI) * BK) % BK) + BK) % BK;
+function sampleG(img, x, y) {     // bilinear; NaN outside the image
+  const xi = Math.floor(x), yi = Math.floor(y);
+  if (xi < 0 || yi < 0 || xi >= img.w - 1 || yi >= img.h - 1) return NaN;
+  const fx = x - xi, fy = y - yi, i = yi * img.w + xi, g = img.g;
+  return g[i] * (1 - fx) * (1 - fy) + g[i + 1] * fx * (1 - fy) + g[i + img.w] * (1 - fx) * fy + g[i + img.w + 1] * fx * fy;
+}
+function poseGeom(lm, img) {
+  if (!lm) return null;
+  const P = i => [lm[i].x * img.w, lm[i].y * img.h], mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const avg = ids => { const ps = ids.map(P); return [ps.reduce((s, p) => s + p[0], 0) / ps.length, ps.reduce((s, p) => s + p[1], 0) / ps.length]; };
+  const Lh = avg([15, 17, 19]), Rh = avg([16, 18, 20]), H = mid(Lh, Rh);
+  const T = dist(mid(P(11), P(12)), mid(P(23), P(24)));
+  const hv = Math.min(...[15, 16, 17, 18, 19, 20].map(i => lm[i].v));
+  return T >= 8 ? { H, T, E: [P(13), P(14)], Lh, Rh, hv } : null;
+}
+// For each direction, looks for a thin straight line passing NEAR the hands (the pose's hand points are a few
+// pixels off the bat axis, so lines are also tried at small sideways offsets O). "Thin line" = darker (or brighter)
+// than BOTH sides; an edge between two areas only differs on one side and scores 0.
+function batScan(img, mot, g) {
+  const { H, T, E } = g, P = new Float32Array(BK * BS), S = new Float32Array(BK), O = new Float32Array(BK);
+  const off = Math.max(3, .09 * T);                     // side-sample distance (a bit more than the barrel's radius)
+  const lat = Math.max(4, .16 * T), lstep = lat / 4;    // sideways offsets tried
+  const elbowAng = E.map(e => Math.atan2(e[1] - H[1], e[0] - H[0]));
+  const line = (x, y, nx, ny) => {
+    const c = sampleG(img, x, y), l = sampleG(img, x + nx, y + ny), r = sampleG(img, x - nx, y - ny);
+    if (!(c === c && l === l && r === r)) return 0;
+    const a = c - l, b = c - r;
+    let v = a * b > 0 ? Math.min(Math.abs(a), Math.abs(b)) : 0;
+    if (mot) { const m = sampleG(mot, x, y); if (m === m) v += .5 * m; }
+    return v;
+  };
+  // scored over the whole bat length; the mean of the best 60% of samples, so a part hidden behind the helmet/body doesn't sink it
+  const sIdx = d => Math.round((d - BD0) / (BD1 - BD0) * (BS - 1));
+  const s0 = sIdx(.3), s1 = sIdx(1.7), b1 = sIdx(1.2), fw = new Float32Array(s1 - s0 + 1), bk = new Float32Array(b1 - s0 + 1);
+  const robust = a => { a.sort(); let s = 0; const n = Math.max(1, Math.round(a.length * .6)); for (let i = a.length - n; i < a.length; i++) s += a[i]; return s / n; };
+  for (let k = 0; k < BK; k++) {
+    const th = k * 2 * Math.PI / BK, ux = Math.cos(th), uy = Math.sin(th), px = -uy, py = ux, nx = px * off, ny = py * off;
+    let best = -1, bo = 0;
+    for (let o = -lat; o <= lat + 1e-6; o += lstep) {
+      const ox = H[0] + px * o, oy = H[1] + py * o;
+      for (let s = s0; s <= s1; s++) {
+        const d = T * bdAt(s);
+        fw[s - s0] = line(ox + ux * d, oy + uy * d, nx, ny);
+        if (s <= b1) bk[s - s0] = line(ox - ux * d, oy - uy * d, nx, ny); // the bat ENDS at the hands; a background line runs on through them
+      }
+      const sc = Math.max(0, robust(fw) - .8 * robust(bk)) * (1 - .15 * Math.abs(o) / lat); // slightly prefer lines through the hands
+      if (sc > best) { best = sc; bo = o; }
+    }
+    const ox = H[0] + px * bo, oy = H[1] + py * bo;
+    for (let s = 0; s < BS; s++) { const d = T * bdAt(s); P[k * BS + s] = line(ox + ux * d, oy + uy * d, nx, ny); }
+    for (const ea of elbowAng) { let dd = Math.abs(th - ea) % (2 * Math.PI); if (dd > Math.PI) dd = 2 * Math.PI - dd; if (dd < .5) best *= .3; } // not along the forearms
+    S[k] = best; O[k] = bo;
+  }
+  let max = 0; for (let k = 0; k < BK; k++) if (S[k] > max) max = S[k];
+  return { P, S, O, max };
+}
+function tipDist(P, k) { // where the line ends along direction k, in torso lengths (ok=false: too faint to tell)
+  const base = [];
+  for (let s = 0; s < BS; s++) { const d = bdAt(s); if (d >= .3 && d <= 1) base.push(P[k * BS + s]); }
+  base.sort((a, b) => a - b);
+  const med = base[base.length >> 1] || 0;
+  if (med < 3) return { d: 1.6, ok: false };
+  const thr = .4 * med, maxGap = 4;
+  let last = 0, gap = 0;
+  for (let s = 0; s < BS; s++) {
+    if (P[k * BS + s] >= thr) { last = s; gap = 0; }
+    else if (++gap > maxGap && bdAt(s) > 1) break;
+  }
+  return { d: clamp(bdAt(last), .9, 2.2), ok: true };
+}
+// dynamic programming: one direction per frame from the image evidence, with a turn limit between frames
+// How far the bat may turn between frames follows the hands: still hands = still bat, fast hands = fast turn (q.sig, degrees).
+function smoothDirections(fr, fps, G) {
+  const n = fr.length, dd2 = new Float32Array(BK);
+  for (let d = 0; d < BK; d++) { const x = Math.min(d, BK - d) * 360 / BK; dd2[d] = x * x; }
+  const trans = new Float32Array(BK);
+  const un = (t, k) => {
+    const q = fr[t]; if (!q || !q.scan || !q.Hs) return 0; // no hands found here: no say in the direction
+    if (q.forced != null) return k === q.forced ? 0 : 5;
+    let u = -Math.min(1, q.scan.S[k] / G);
+    if (q.quiet && q.pre) u += .6 * q.quiet * clamp((Math.sin(k * 2 * Math.PI / BK) + .5) / .5, 0, 1); // before the swing, hands still (stance/load): the bat is held up, 30°+ above horizontal
+    return u;
+  };
+  const cost = new Float32Array(n * BK), back = new Int16Array(n * BK);
+  for (let k = 0; k < BK; k++) cost[k] = un(0, k);
+  for (let t = 1; t < n; t++) {
+    const sg = fr[t].sig || Math.max(8, 1500 / fps), inv = .5 / (sg * sg);
+    for (let d = 0; d < BK; d++) trans[d] = dd2[d] * inv;
+    for (let k = 0; k < BK; k++) {
+      let best = Infinity, bj = 0;
+      for (let j = 0; j < BK; j++) { const v = cost[(t - 1) * BK + j] + trans[(k - j + BK) % BK]; if (v < best) { best = v; bj = j; } }
+      cost[t * BK + k] = best + un(t, k); back[t * BK + k] = bj;
+    }
+  }
+  let k = 0, b = Infinity;
+  for (let j = 0; j < BK; j++) if (cost[(n - 1) * BK + j] < b) { b = cost[(n - 1) * BK + j]; k = j; }
+  const out = new Array(n);
+  for (let t = n - 1; t >= 0; t--) { out[t] = k; k = back[t * BK + k]; }
+  return out;
+}
+const median = a => { const s = a.filter(v => v != null && v === v).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; };
+// turns the per-frame data into bat-head points (also used directly by the tests)
+// fr = the NEW frames only (repeated frames removed), each with a shot number q.seg. Nothing is smoothed across a camera cut.
+function solveBatPath(fr, fps) {
+  const n = fr.length, maxGap = Math.max(3, Math.round(fps / 4));
+  const same = (i, t) => i >= 0 && i < n && fr[i].seg === fr[t].seg;
+  // hands/body: smooth the frames where the pose was found, interpolate short gaps, drop long ones
+  const own = fr.map(q => q.own ? q.geo : null);
+  for (let t = 0; t < n; t++) {
+    const q = fr[t]; q.Hs = null; q.Ts = null;
+    if (own[t]) {
+      const hs = []; for (let i = t - 1; i <= t + 1; i++) if (same(i, t) && own[i]) hs.push(own[i].H);
+      q.Hs = [hs.reduce((s, p) => s + p[0], 0) / hs.length, hs.reduce((s, p) => s + p[1], 0) / hs.length];
+      const ts = []; for (let i = t - 3; i <= t + 3; i++) if (same(i, t) && own[i]) ts.push(own[i].T);
+      q.Ts = median(ts);
+    } else {
+      let a = t - 1, b = t + 1;
+      while (same(a, t) && !own[a]) a--; while (same(b, t) && !own[b]) b++;
+      if (same(a, t) && same(b, t) && fr[b].f - fr[a].f <= maxGap) {
+        const r = (q.f - fr[a].f) / (fr[b].f - fr[a].f);
+        q.Hs = [own[a].H[0] + (own[b].H[0] - own[a].H[0]) * r, own[a].H[1] + (own[b].H[1] - own[a].H[1]) * r];
+        q.Ts = own[a].T + (own[b].T - own[a].T) * r;
+      }
+    }
+  }
+  // scale for the image evidence (75th percentile of the per-frame best scores)
+  const G = Math.max(1e-6, (() => { const m = fr.filter(q => q.scan).map(q => q.scan.max).sort((a, b) => a - b); return m[Math.floor(m.length * .75)] || 1; })());
+  // hand direction (left hand -> right hand), with a weight for how reliable it is
+  for (const q of fr) {
+    q.hth = null; q.hw = 0;
+    if (!q.own) continue;
+    const g = q.geo, vx = g.Rh[0] - g.Lh[0], vy = g.Rh[1] - g.Lh[1], len = Math.hypot(vx, vy);
+    q.hth = Math.atan2(vy, vx); q.hw = clamp(len / (.1 * g.T), 0, 1) * (g.hv >= .5 ? 1 : .4);
+  }
+  // which hand is on top: the bat is long on the top-hand side, short (just the knob) on the other
+  let side = 0, best = -Infinity;
+  for (const sd of [0, Math.PI]) {
+    let sc = 0;
+    fr.forEach((q, t) => {
+      if (q.hth == null || !q.scan) return;
+      const th = q.hth + sd; sc += q.hw * Math.min(1, q.scan.S[angK(th)] / G);
+      if (t < n * .15) sc += .2 * q.hw * Math.max(0, -Math.sin(th)); // in the stance the bat head is usually up
+    });
+    if (sc > best) { best = sc; side = sd; }
+  }
+  // the guide direction per frame, smoothed over ±2 frames of the same shot
+  fr.forEach((q, t) => {
+    q.pth = null; q.pw = 0;
+    let sx = 0, sy = 0, sw = 0;
+    for (let i = t - 2; i <= t + 2; i++) { if (!same(i, t)) continue; const p = fr[i]; if (p.hth == null) continue; sx += Math.cos(p.hth + side) * p.hw; sy += Math.sin(p.hth + side) * p.hw; sw += p.hw; }
+    if (sw > 0) { q.pth = Math.atan2(sy, sx); q.pw = clamp(Math.hypot(sx, sy) / sw, 0, 1) * Math.min(1, sw / 2); }
+  });
+  // how fast the hands move (torso lengths per new frame) sets how far the bat may turn; free turn at a camera cut
+  const hsp = fr.map((q, t) => same(t - 1, t) && q.Hs && fr[t - 1].Hs && q.Ts ? dist(q.Hs, fr[t - 1].Hs) / q.Ts : null);
+  fr.forEach((q, t) => {
+    const vs = [t - 1, t, t + 1].filter(i => same(i, t)).map(i => hsp[i]).filter(x => x != null);
+    if (!vs.length) { q.sig = 180; q.quiet = 0; return; } // hands not found around here: unknown, so no constraint
+    const v = Math.max(...vs);
+    q.sig = t > 0 && !same(t - 1, t) ? 1000 : clamp(10 + 300 * v, 10, 180); // fast hands (or few frames per swing): the bat may turn a lot
+    q.quiet = clamp((.15 - v) / .09, 0, 1); // 1 = hands still (stance/load), 0 = swinging
+  });
+  // frames before the swing (fastest hands, one-frame glitches ignored): only there does "bat held up" apply
+  const sm = hsp.map((v, t) => median([t - 1, t, t + 1].filter(i => same(i, t)).map(i => hsp[i] || 0)));
+  const pkT = sm.indexOf(Math.max(...sm));
+  fr.forEach((q, t) => { q.pre = t < pkT || !same(t, pkT); });
+  const ks = smoothDirections(fr, fps, G); fr.forEach((q, t) => q.kSel = ks[t]);
+  // one bat length for the clip: from your taps if any, else from frames where the bat was clearly seen
+  const tapped = fr.filter(q => q.fd != null && q.Ts).map(q => q.fd / q.Ts);
+  const seen = [];
+  fr.forEach((q, t) => { if (!q.scan || !q.Ts) return; const r = tipDist(q.scan.P, ks[t]); q.td = r; if (r.ok && q.scan.S[ks[t]] / G > .5) seen.push(r.d); });
+  let L = tapped.length ? median(tapped) : seen.length >= 5 ? median(seen) : 1.6;
+  if (!tapped.length) L = clamp(L, 1.2, 2.1);
+  const dT = fr.map((q, t) => {
+    if (!q.Ts) return null;
+    if (q.fd != null) return q.fd / q.Ts;
+    const r = q.td; return r && r.ok && q.scan.S[ks[t]] / G > .5 ? clamp(r.d, .75 * L, 1.08 * L) : L;
+  });
+  const win = (a, t, r) => { const o = []; for (let i = t - r; i <= t + r; i++) if (same(i, t) && a[i] != null) o.push(a[i]); return o; };
+  const dm = dT.map((v, t) => v == null ? null : median(win(dT, t, 2)));
+  return fr.map((q, t) => {
+    if (dm[t] == null || !q.Hs) return null;
+    const near = win(dm, t, 1), d = near.reduce((s, v) => s + v, 0) / near.length * q.Ts;
+    const th = ks[t] * 2 * Math.PI / BK;
+    const o = q.fd != null || !q.scan ? 0 : q.scan.O[ks[t]]; // sideways offset of the detected line from the hands
+    return [q.Hs[0] - Math.sin(th) * o + Math.cos(th) * d, q.Hs[1] + Math.cos(th) * o + Math.sin(th) * d];
+  });
+}
+// how much a new frame differs from the previous new frame: mean, median and near-max (99.5%) of |difference|
+function frameChange(a, b) {
+  const hist = new Uint32Array(256); let sum = 0, n = 0;
+  for (let i = 0; i < a.g.length; i += 3) { const d = Math.min(255, Math.round(Math.abs(a.g[i] - b.g[i]))); hist[d]++; sum += d; n++; }
+  const at = p => { let c = 0; const lim = n * p; for (let v = 0; v < 256; v++) { c += hist[v]; if (c >= lim) return v; } return 255; };
+  return { mean: sum / n, med: at(.5), hi: at(.995) };
+}
+let batJob = null;
+async function autoBat(c) {
+  if (batJob) { batJob.cancel = true; return; }
+  c = c || trackClip(activeStage());
+  if (!c.loaded) return toast('動画を読み込んでください');
+  if (c.tainted) return toast('この動画は自動で描けません', 5000);
+  closePop();
+  const job = { cancel: false }; batJob = job; updateUI(); // marked as running before the model loads, so a second press stops instead of starting another run
+  toast('バットの軌跡を自動作成中…', 15000);
+  try { await getLM(); } catch (e) { batJob = null; updateUI(); return; }
+  if (job.cancel) { batJob = null; updateUI(); return toast('停止しました'); }
+  for (const x of [A, B]) x.v.pause(); stopFling();
+  const N = totalFrames(c), t0 = c.v.currentTime;
+  let f0 = 0, f1 = N - 1;
+  if (c.markers.length >= 2) { // only around the marked part of the swing
+    f0 = Math.max(0, Math.floor((c.markers[0].t - .25) * c.fps));
+    f1 = Math.min(N - 1, Math.ceil((c.markers[c.markers.length - 1].t + .25) * c.fps));
+  }
+  const fr = []; let prev = null, geo = null, seg = 0;
+  try {
+    for (let f = f0; f <= f1 && !job.cancel; f++) {
+      await seekAwait(c.v, (f + .5) / c.fps);
+      const img = grabGray(c);
+      let dup = false, cut = false, mot = null;
+      if (prev && prev.g.length === img.g.length) {
+        const ch = frameChange(img, prev);
+        dup = ch.hi < 9;                      // a copy of the previous frame (screen recordings, slow-motion playback)
+        cut = !dup && ch.mean > 25 && ch.med > 10; // camera cut: almost every pixel changed
+        if (!dup && !cut) { mot = { w: img.w, h: img.h, g: new Float32Array(img.g.length) }; for (let i = 0; i < img.g.length; i++) mot.g[i] = Math.abs(img.g[i] - prev.g[i]); }
+      }
+      if (cut) { seg++; geo = null; }
+      if (dup) { fr.push({ f, dup: true, seg }); continue; }
+      prev = img;
+      if (!c.poseCache.has(f) || cut) detectInto(c, f, cut);
+      const g = poseGeom(c.poseCache.get(f), img); geo = g || geo; // no person found: scan from the last known hands
+      const q = { f, seg, geo, own: !!g, w: img.w, h: img.h, scan: geo ? batScan(img, mot, geo) : null, forced: null, fd: null };
+      const tap = c.track.get(f);
+      if (tap && tap.m && geo) {
+        const tx = tap.x * img.w - geo.H[0], ty = tap.y * img.h - geo.H[1];
+        q.forced = angK(Math.atan2(ty, tx)); q.fd = Math.hypot(tx, ty);
+      }
+      fr.push(q);
+      if ((f - f0) % 5 === 0) toast(`バットの軌跡を自動作成中… ${Math.round((f - f0) / Math.max(1, f1 - f0) * 100)}%（もう一度押すと停止）`, 2000);
+    }
+  } catch (e) {
+    console.warn(e); batJob = null; updateUI(); seek(c, t0);
+    return toast('この動画は自動で描けません', 4000);
+  }
+  batJob = null;
+  const fu = fr.filter(q => !q.dup);
+  if (!fu.some(q => q.own)) { seek(c, t0); updateUI(); return toast('人物が見つからず、自動で描けませんでした', 4500); }
+  const pts = solveBatPath(fu, c.fps); if (window.__fcDebug) window.__batDebug = { fu }; // tests only
+  // without markers, keep only the swing: 1.0 s before to 1.0 s after the fastest hand movement, inside that one shot
+  let w0 = -Infinity, w1 = Infinity;
+  if (c.markers.length < 2) {
+    const sp = fu.map((q, t) => { const p = fu[t - 1]; return p && p.seg === q.seg && q.Hs && p.Hs && q.Ts ? dist(q.Hs, p.Hs) / q.Ts : 0; });
+    const sm = sp.map((v, t) => median(sp.slice(Math.max(0, t - 1), t + 2))); // ignore one-frame pose glitches
+    const pi = sm.indexOf(Math.max(...sm)), pk = fu[pi].f, sg = fu[pi].seg;
+    const inShot = fr.filter(q => q.seg === sg).map(q => q.f);
+    w0 = Math.max(pk - Math.round(1.0 * c.fps), Math.min(...inShot)); w1 = Math.min(pk + Math.round(1.0 * c.fps), Math.max(...inShot));
+  }
+  const ptOf = new Map(fu.map((q, t) => [q.f, pts[t]]));
+  let n = 0, last = null, lastSeg = -1;
+  for (const q of fr) {
+    let p = q.dup ? (q.seg === lastSeg ? last : null) : ptOf.get(q.f); // a repeated frame shows the same bat as the frame it repeats
+    if (!q.dup) { last = p; lastSeg = q.seg; }
+    const old = c.track.get(q.f);
+    if (old && old.m) continue; // keep what you tapped
+    if (!p || q.f < w0 || q.f > w1) { if (old) c.track.delete(q.f); continue; }
+    const w = q.dup ? fu[0].w : q.w, h = q.dup ? fu[0].h : q.h;
+    c.track.set(q.f, { x: p[0] / w, y: p[1] / h, m: 0 }); n++;
+  }
+  if (!job.hidden) S.trail = true; // hidden with the 軌跡 button while drawing: keep it hidden
+  seek(c, t0); followB();
+  toast(job.cancel ? `${n}コマ分を描いて停止しました` : `${n}コマ分のバット軌跡を描きました。ずれたコマは「軌跡」ツールでタップして直し、もう一度「自動で描く」`, 5000);
+  dirty = true; updateUI();
+}
+
+// ---------- markers ----------
+const mFrame = (c, m) => Math.floor(m.t * c.fps + 1e-4);
+const realDt = (c, dt) => dt * (c.timeFps ? c.fps / c.timeFps : 1);
+function addMarker(c, lbl) {
+  if (!c.loaded) return toast('動画を読み込んでください');
+  const t = snapT(c, c.v.currentTime), ex = c.markers.find(m => m.label === lbl);
+  if (ex) ex.t = t; else c.markers.push({ label: lbl, t });
+  c.markers.sort((a, b) => a.t - b.t);
+  toast(`${c.id}: 「${lbl}」を ${frameIdx(c) + 1}コマ目に設定`);
+  renderTicks(); dirty = true; rerenderPop();
+}
+function nextLabel(c) { return PRESETS[S.preset].labels.find(l => !c.markers.some(m => m.label === l)); }
+function markerDt(c, l1, l2) {
+  const a = c.markers.find(m => m.label === l1), b = c.markers.find(m => m.label === l2);
+  return a && b ? realDt(c, b.t - a.t) : null;
+}
+function jumpTo(c, t) {
+  for (const x of [A, B]) x.v.pause();
+  if (S.linked && linkable()) { if (c === A) { seek(A, t); followB(); } else { seek(B, t); seek(A, t - S.offset); } }
+  else { setActive(c.id); seek(c, t); }
+}
+function syncAt(lbl) {
+  const a = A.markers.find(m => m.label === lbl), b = B.markers.find(m => m.label === lbl);
+  if (!a || !b) return;
+  A.v.pause(); B.v.pause(); S.offset = b.t - a.t; S.linked = true; seek(A, a.t); followB();
+  toast(`「${lbl}」で同期しました`); updateUI();
+}
+
+// ---------- drawing interaction ----------
+function pushUndo(st) { st.undo.push(JSON.stringify(st.shapes)); if (st.undo.length > 60) st.undo.shift(); }
+const curW = () => WIDTHS[S.widthIdx][0];
+function commitDraft(st) {
+  const d = st.draft; if (!d) return; st.draft = null; delete d.hover;
+  if ((d.type === 'angle' && d.pts.length === 3) || (d.type === 'poly' && d.pts.length >= 2)) { pushUndo(st); st.shapes.push(d); }
+  dirty = true; updateUI();
+}
+function shapeBigEnough(st, d) {
+  if (d.type === 'pen') return d.pts.length > 1;
+  const [p, q] = shapePts(d).map(n => n2s(st, n));
+  return dist(p, q) * st.z.s > 4;
+}
+function hitShape(st, sh, p, tol) {
+  if (sh.type === 'circle') { const c = n2s(st, sh.c), r = dist(c, n2s(st, sh.e)); return Math.abs(dist(p, c) - r) < tol; }
+  const pts = (sh.type === 'line' || sh.type === 'arrow') ? [sh.a, sh.b] : sh.pts;
+  const s = pts.map(n => n2s(st, n));
+  for (let i = 1; i < s.length; i++) if (distSeg(p, s[i - 1], s[i]) < tol) return true;
+  return s.length === 1 && dist(p, s[0]) < tol;
+}
+function hitPose(st, p, tol) {
+  for (const c of clipsOf(st).slice().reverse()) {
+    if (!c.pose) continue; const lm = poseAt(c); if (!lm) continue;
+    for (const i of PTS) if (dist(clipToStage(c, st, lm[i].x, lm[i].y), p) < tol) return { c, i, lm };
+  }
+  return null;
+}
+function startPinch(st) {
+  const [p1, p2] = [...st.ptrs.values()];
+  if (st.g && st.g.kind === 'draw') st.draft = null;
+  if (st.g && st.g.kind === 'tap' && st.draft) { st.draft.pts.pop(); if (!st.draft.pts.length) st.draft = null; }
+  if (st.g && st.g.kind === 'trackDrag') { const g = st.g; if (g.prev) g.c.track.set(g.f, g.prev); else g.c.track.delete(g.f); trackUndo.pop(); }
+  st.g = { kind: 'pinch', d0: dist(p1, p2) || 1, m0: [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2], z0: { ...st.z }, bs0: moveClip().place.s };
+}
+function onDown(st, e) {
+  e.preventDefault(); closePop();
+  try { st.cv.setPointerCapture(e.pointerId); } catch (_) {}
+  if (S.mode !== 'overlay') setActive(st.i === 0 ? 'A' : 'B');
+  const q = localPt(st, e); st.ptrs.set(e.pointerId, q);
+  if (st.ptrs.size === 2) { startPinch(st); dirty = true; return; }
+  if (st.ptrs.size > 2) return;
+  const p = toStage(st, q), tol = 16 / st.z.s, tool = S.tool;
+  if (tool === 'select') {
+    const cand = st.sel ? [st.sel, ...st.shapes.slice().reverse()] : st.shapes.slice().reverse();
+    for (const sh of cand) {
+      const hs = handlesOf(sh);
+      for (let k = 0; k < hs.length; k++) if (dist(n2s(st, hs[k]), p) < tol) {
+        pushUndo(st); st.sel = sh; st.g = { kind: (sh.type === 'circle' && k === 0) ? 'move' : 'handle', sh, k, last: p }; dirty = true; updateUI(); return;
+      }
+    }
+    const ph = hitPose(st, p, tol); if (ph) { st.g = { kind: 'pose', ...ph }; return; }
+    const body = st.shapes.slice().reverse().find(sh => hitShape(st, sh, p, tol * .8));
+    if (body) { pushUndo(st); st.sel = body; st.g = { kind: 'move', sh: body, last: p }; dirty = true; updateUI(); return; }
+    st.sel = null; st.g = { kind: 'pan', last: q }; dirty = true; updateUI(); return;
+  }
+  if (tool === 'track') {
+    const c = trackClip(st); if (!c.loaded) return toast('動画を読み込んでください');
+    for (const x of [A, B]) x.v.pause(); stopFling();
+    const f = frameIdx(c), prev = c.track.get(f), n = stageToClip(c, st, p[0], p[1]);
+    c.track.set(f, { x: n[0], y: n[1], m: 1 });
+    trackUndo.push({ c, f, prev }); if (trackUndo.length > 300) trackUndo.shift();
+    st.g = { kind: 'trackDrag', c, f, prev };
+    dirty = true; updateUI(); return;
+  }
+  if (tool === 'moveB') { st.g = { kind: 'moveB', last: q }; return; }
+  st.sel = null;
+  const n = s2n(st, p), base = { color: S.color, w: curW() };
+  if (tool === 'pen') { st.draft = { type: 'pen', ...base, pts: [n] }; st.g = { kind: 'draw' }; }
+  else if (tool === 'line' || tool === 'arrow') { st.draft = { type: tool, ...base, a: n, b: n.slice() }; st.g = { kind: 'draw' }; }
+  else if (tool === 'circle') { st.draft = { type: 'circle', ...base, c: n, e: n.slice() }; st.g = { kind: 'draw' }; }
+  else if (tool === 'angle' || tool === 'poly') {
+    if (!st.draft || st.draft.type !== tool) st.draft = { type: tool, ...base, pts: [n] }; else st.draft.pts.push(n);
+    delete st.draft.hover; st.g = { kind: 'tap' };
+  }
+  dirty = true; updateUI();
+}
+function onMove(st, e) {
+  if (!st.ptrs.has(e.pointerId)) {
+    if (e.pointerType === 'mouse' && st.draft && (st.draft.type === 'angle' || st.draft.type === 'poly')) { st.draft.hover = s2n(st, toStage(st, localPt(st, e))); dirty = true; }
+    return;
+  }
+  const q = localPt(st, e); st.ptrs.set(e.pointerId, q);
+  const g = st.g; if (!g) return;
+  if (g.kind === 'pinch') {
+    if (st.ptrs.size < 2) return;
+    const [p1, p2] = [...st.ptrs.values()], d = dist(p1, p2), m = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
+    if (S.tool === 'moveB' && S.mode === 'overlay' && st.i === 0) { moveClip().place.s = clamp(g.bs0 * d / g.d0, .2, 5); applyCss(); return; }
+    const s = clamp(g.z0.s * d / g.d0, 1, 12), px = (g.m0[0] - g.z0.x) / g.z0.s, py = (g.m0[1] - g.z0.y) / g.z0.s;
+    st.z.s = s; st.z.x = m[0] - px * s; st.z.y = m[1] - py * s; clampZoom(st); applyCss(); return;
+  }
+  const p = toStage(st, q);
+  switch (g.kind) {
+    case 'pan': st.z.x += q[0] - g.last[0]; st.z.y += q[1] - g.last[1]; g.last = q; clampZoom(st); applyCss(); break;
+    case 'moveB': { const mp = moveClip().place; mp.tx += (q[0] - g.last[0]) / st.z.s / st.w; mp.ty += (q[1] - g.last[1]) / st.z.s / st.h; g.last = q; applyCss(); break; }
+    case 'handle': { const n = s2n(st, p), h = handlesOf(g.sh)[g.k]; h[0] = n[0]; h[1] = n[1]; break; }
+    case 'move': { const a = s2n(st, g.last), b = s2n(st, p); for (const pt of shapePts(g.sh)) { pt[0] += b[0] - a[0]; pt[1] += b[1] - a[1]; } g.last = p; break; }
+    case 'pose': { const n = stageToClip(g.c, st, p[0], p[1]); Object.assign(g.lm[g.i], { x: n[0], y: n[1], v: 1 }); break; }
+    case 'trackDrag': { const n = stageToClip(g.c, st, p[0], p[1]); g.c.track.set(g.f, { x: n[0], y: n[1], m: 1 }); break; }
+    case 'draw': {
+      const d = st.draft, n = s2n(st, p); if (!d) break;
+      if (d.type === 'pen') { if (dist(n2s(st, d.pts[d.pts.length - 1]), p) * st.z.s > 1.5) d.pts.push(n); }
+      else if (d.type === 'circle') d.e = n; else d.b = n;
+      break;
+    }
+    case 'tap': if (st.draft) st.draft.pts[st.draft.pts.length - 1] = s2n(st, p); break;
+  }
+  dirty = true;
+}
+function onUp(st, e, cancel) {
+  if (!st.ptrs.has(e.pointerId)) return;
+  st.ptrs.delete(e.pointerId);
+  const g = st.g;
+  if (g && g.kind === 'pinch') { if (st.ptrs.size === 0) st.g = null; return; }
+  st.g = null; if (!g) return;
+  if (g.kind === 'draw' && st.draft) { const d = st.draft; st.draft = null; if (!cancel && shapeBigEnough(st, d)) { pushUndo(st); st.shapes.push(d); } }
+  if (g.kind === 'tap' && st.draft && st.draft.type === 'angle' && st.draft.pts.length >= 3) commitDraft(st);
+  if (g.kind === 'trackDrag' && !cancel && S.trackAdv) step(1);
+  dirty = true; updateUI();
+}
+const trackClip = st => st.i === 1 ? B : (S.mode === 'overlay' ? clips[S.active] : A);
+let trackUndo = [];
+function onWheel(st, e) {
+  e.preventDefault();
+  const q = localPt(st, e), f = Math.exp(-e.deltaY * .0015);
+  if (S.tool === 'moveB' && S.mode === 'overlay' && st.i === 0) { const mp = moveClip().place; mp.s = clamp(mp.s * f, .2, 5); applyCss(); return; }
+  const z = st.z, s = clamp(z.s * f, 1, 12), px = (q[0] - z.x) / z.s, py = (q[1] - z.y) / z.s;
+  z.s = s; z.x = q[0] - px * s; z.y = q[1] - py * s; clampZoom(st); applyCss();
+}
+for (const st of ST) {
+  const cv = st.cv;
+  cv.addEventListener('pointerdown', e => onDown(st, e));
+  cv.addEventListener('pointermove', e => onMove(st, e));
+  cv.addEventListener('pointerup', e => onUp(st, e, false));
+  cv.addEventListener('pointercancel', e => onUp(st, e, true));
+  cv.addEventListener('pointerleave', () => { if (st.draft && st.draft.hover) { delete st.draft.hover; dirty = true; } });
+  cv.addEventListener('wheel', e => onWheel(st, e), { passive: false });
+  cv.addEventListener('dblclick', () => { if (st.draft && st.draft.type === 'poly') commitDraft(st); });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  new ResizeObserver(() => resize(st)).observe(st.vp);
+}
+function setTool(t) {
+  for (const st of ST) if (st.draft) commitDraft(st);
+  S.tool = t;
+  for (const st of ST) st.cv.className = 'ink t-' + t;
+  updateUI();
+}
+function undo() {
+  if (S.tool === 'track') {
+    const u = trackUndo.pop(); if (!u) return toast('戻せる操作がありません');
+    if (u.prev) u.c.track.set(u.f, u.prev); else u.c.track.delete(u.f);
+    if (u.c.loaded && frameIdx(u.c) !== u.f) jumpTo(u.c, (u.f + .5) / u.c.fps);
+    dirty = true; updateUI(); return;
+  }
+  const st = activeStage();
+  if (st.draft && st.draft.pts && st.draft.pts.length) { st.draft.pts.pop(); if (!st.draft.pts.length) st.draft = null; dirty = true; updateUI(); return; }
+  if (!st.undo.length) return toast('戻せる操作がありません');
+  st.shapes = JSON.parse(st.undo.pop()); st.sel = null; dirty = true; updateUI();
+}
+function delSel() {
+  for (const st of ST) if (st.sel) { pushUndo(st); st.shapes = st.shapes.filter(s => s !== st.sel); st.sel = null; dirty = true; }
+  updateUI();
+}
+
+// ---------- export ----------
+function renderComposite(k, targetW) {
+  const sts = visibleStages(), gap = 4;
+  const W = sts.reduce((s, st) => s + st.w, 0) + gap * (sts.length - 1), H = Math.max(...sts.map(s => s.h));
+  if (targetW) k = targetW / W;
+  const cv = document.createElement('canvas'); cv.width = Math.round(W * k); cv.height = Math.round(H * k);
+  const ctx = cv.getContext('2d'); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  let ox = 0; for (const st of sts) { drawStage(st, ctx, k, ox, true); ox += st.w + gap; }
+  return cv;
+}
+function exportPNG() {
+  const cv = renderComposite(2);
+  try {
+    cv.toBlob(b => {
+      if (!b) return toast('保存に失敗しました');
+      const a = document.createElement('a'), d = new Date(), pad = x => String(x).padStart(2, '0');
+      a.href = URL.createObjectURL(b);
+      a.download = `formcheck_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.png`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    }, 'image/png');
+  } catch (e) { toast('この動画は画像保存できません', 4000); }
+}
+function makeThumb() {
+  if (!A.loaded && !B.loaded) return null;
+  try { return renderComposite(1, 200).toDataURL('image/jpeg', .7); } catch (e) { return null; }
+}
+
+// ---------- sessions (save / restore) ----------
+function videoKeyOf(c) {
+  const s = c.src || {};
+  if (s.kind === 'drive') return 'drive:' + s.driveId;
+  return `file:${s.name}|${s.size || (c.blob && c.blob.size) || ''}|${s.lastModified || ''}`;
+}
+function clipState(c) {
+  if (!c.loaded) return c.relink || c.pendingRestore || null;
+  if (c.pendingRestore) return c.pendingRestore;
+  return { src: { ...c.src }, fps: c.fps, fpsAuto: c.fpsAuto, timeFps: c.timeFps, mirror: c.mirror, place: { ...c.place },
+    markers: c.markers.map(m => ({ ...m })), time: c.v.currentTime, poseOn: c.pose, pose: [...c.poseCache].filter(e => e[1]),
+    track: [...c.track].map(([f, q]) => [f, { ...q }]) };
+}
+function buildSession() {
+  return { mode: S.mode, linked: S.pendingLink != null || (S.linked && linkable()), offset: S.pendingLink != null ? S.pendingLink : S.offset,
+    rate: S.rate, shapes: ST.map(st => JSON.parse(JSON.stringify(st.shapes))), A: clipState(A), B: clipState(B),
+    sessionId: S.sessionId, sessionName: S.sessionName };
+}
+async function storeVideos() {
+  if (!S.storeVideos) return;
+  for (const c of [A, B]) {
+    if (!c.loaded || !c.blob || c.videoStored) continue;
+    const key = videoKeyOf(c);
+    try {
+      if (!(await DB.count('videos', key))) await DB.put('videos', c.blob, key);
+      c.videoStored = true; c.src.videoKey = key;
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    } catch (e) { c.videoStored = true; toast('動画を端末に保存できませんでした（容量不足の可能性）', 4000); }
+  }
+}
+async function gcVideos() {
+  try {
+    const keep = new Set();
+    for (const s of await DB.all('sessions')) for (const id of ['A', 'B']) if (s[id] && s[id].src && s[id].src.videoKey) keep.add(s[id].src.videoKey);
+    for (const c of [A, B]) if (c.src && c.src.videoKey) keep.add(c.src.videoKey);
+    for (const k of await DB.keys('library')) keep.add(k); // videos in the list stay until removed there
+    for (const k of await DB.keys('videos')) if (!keep.has(k)) await DB.del('videos', k);
+  } catch (e) {}
+}
+async function saveSession(id, name) {
+  await storeVideos();
+  const s = buildSession(); Object.assign(s, { id, name, updated: Date.now(), thumb: makeThumb() });
+  await DB.put('sessions', s);
+  await gcVideos();
+}
+async function openSession(s) {
+  closeLibrary();
+  $$('.modal').forEach(m => m.classList.remove('open')); closePop(); hideResume();
+  for (const c of [A, B]) clearClip(c);
+  S.pendingLink = s.linked ? s.offset : null; S.offset = s.offset || 0;
+  setMode(s.mode || 'single');
+  ST.forEach((st, i) => { st.shapes = (s.shapes && s.shapes[i]) || []; st.undo = []; st.sel = null; st.draft = null; st.z = { s: 1, x: 0, y: 0 }; });
+  setRate(s.rate || 1);
+  if (s.id !== '__last') { S.sessionId = s.id; S.sessionName = s.name || ''; }
+  else { S.sessionId = s.sessionId || null; S.sessionName = s.sessionName || ''; }
+  for (const id of ['A', 'B']) {
+    const cs = s[id], c = clips[id]; if (!cs) continue;
+    const src = cs.src || {};
+    if (src.videoKey) {
+      try {
+        const blob = await DB.get('videos', src.videoKey);
+        if (blob) { loadInto(c, URL.createObjectURL(blob), src.name, { blob, src: { ...src }, videoStored: true, restore: cs }); continue; }
+      } catch (e) {}
+    }
+    c.relink = cs; c.name = src.name || '';
+  }
+  if (S.mode === 'single' && s.B) setMode('side');
+  applyCss(); updateUI(); dirty = true;
+}
+// autosave of the current work as "__last"
+let lastSig = '', autosaving = false;
+async function autosave() {
+  if (autosaving || analyzing || A.pendingRestore || B.pendingRestore) return;
+  if (!A.loaded && !B.loaded) return;
+  autosaving = true;
+  try {
+    await storeVideos();
+    const s = buildSession(), sig = JSON.stringify(s);
+    if (sig !== lastSig) { Object.assign(s, { id: '__last', updated: Date.now() }); await DB.put('sessions', s); lastSig = sig; await gcVideos(); }
+  } catch (e) {}
+  autosaving = false;
+}
+setInterval(autosave, 4000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autosave(); });
+function hideResume() { $('#resume').hidden = true; }
+const fmtDate = t => { const d = new Date(t), p = x => String(x).padStart(2, '0'); return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+function sessNames(s) { return ['A', 'B'].map(id => s[id] && s[id].src && s[id].src.name).filter(Boolean); }
+function defaultName() { const d = new Date(); return `${d.getMonth() + 1}/${d.getDate()} ${A.name ? A.name.replace(/\.[^.]+$/, '') : ''}`.trim(); }
+function openSessions() {
+  closePop(); $('#sessModal').classList.add('open');
+  $('#sessName').value = S.sessionName || defaultName();
+  $('#sessOverwrite').hidden = !S.sessionId; $('#storeVid').checked = S.storeVideos;
+  renderSessList(); renderStorage();
+}
+async function renderStorage() {
+  const el = $('#storageInfo'); el.textContent = '';
+  try { const e = await navigator.storage.estimate(); el.textContent = `この端末の使用量: ${(e.usage / 1048576).toFixed(0)}MB（上限の目安 ${(e.quota / 1073741824).toFixed(1)}GB）`; } catch (e) {}
+}
+async function renderSessList() {
+  const el = $('#sessList');
+  let ss;
+  try { ss = (await DB.all('sessions')).filter(s => s.id !== '__last').sort((a, b) => b.updated - a.updated); }
+  catch (e) { el.innerHTML = '<div class="item small muted">このブラウザでは保存できません（プライベートモード等）</div>'; return; }
+  if (!ss.length) { el.innerHTML = '<div class="item small muted">保存した分析はまだありません</div>'; return; }
+  el.innerHTML = ss.map(s => {
+    const stored = ['A', 'B'].every(id => !s[id] || (s[id].src && s[id].src.videoKey));
+    return `<div class="item">${s.thumb ? `<img class="thumb" src="${s.thumb}" alt="">` : '<div class="thumb"></div>'}
+      <div class="meta"><div><b>${esc(s.name || '無題')}</b></div><div class="small muted">${fmtDate(s.updated)} · ${esc(sessNames(s).join(' / '))}</div>
+      <div class="small muted">${stored ? 'すぐ開けます' : '開くときに動画を選び直します'}</div></div>
+      <button class="sm primary" data-open="${esc(s.id)}">開く</button><button class="sm" data-del="${esc(s.id)}" aria-label="削除">✕</button></div>`;
+  }).join('');
+  el.onclick = async e => {
+    const o = e.target.closest('[data-open]'), d = e.target.closest('[data-del]');
+    if (o) { const s = ss.find(x => x.id === o.dataset.open); if (s) openSession(s); }
+    if (d) {
+      const s = ss.find(x => x.id === d.dataset.del); if (!s) return;
+      if (!confirm(`「${s.name || '無題'}」を削除しますか？（元に戻せません）`)) return;
+      await DB.del('sessions', s.id); if (S.sessionId === s.id) { S.sessionId = null; $('#sessOverwrite').hidden = true; }
+      await gcVideos(); renderSessList(); renderStorage();
+    }
+  };
+}
+async function doSave(id, name) {
+  try {
+    toast('保存中…', 15000); await saveSession(id, name);
+    S.sessionId = id; S.sessionName = name; toast('保存しました');
+    $('#sessOverwrite').hidden = false; renderSessList(); renderStorage();
+  } catch (e) { toast('保存に失敗しました: ' + e.message, 5000); }
+}
+
+// ---------- popover menus ----------
+let POP = null;
+function openPop(key, anchor, build) {
+  if (POP && POP.key === key) { closePop(); return; }
+  closePop();
+  const el = $('#pop'); POP = { key, anchor, build, el };
+  build(el); el.hidden = false; placePop();
+}
+function placePop() {
+  const { el, anchor } = POP, r = anchor.getBoundingClientRect(), vw = innerWidth, vh = innerHeight;
+  el.style.maxHeight = ''; el.style.left = '0px'; el.style.top = '0px';
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const above = r.top - 14, below = vh - r.bottom - 14;
+  let top;
+  if (h <= above) top = r.top - h - 6;
+  else if (h <= below) top = r.bottom + 6;
+  else if (above >= below) { el.style.maxHeight = above + 'px'; top = 8; }
+  else { el.style.maxHeight = below + 'px'; top = r.bottom + 6; }
+  el.style.left = clamp(r.left + r.width / 2 - w / 2, 8, vw - w - 8) + 'px';
+  el.style.top = top + 'px';
+}
+function closePop() { if (POP) { POP.el.hidden = true; POP.el.innerHTML = ''; POP = null; $('#markBtn').classList.remove('on'); } }
+function rerenderPop() { if (POP) { const st = POP.el.scrollTop; POP.build(POP.el); placePop(); POP.el.scrollTop = st; } }
+document.addEventListener('pointerdown', e => { if (POP && !POP.el.contains(e.target) && !POP.anchor.contains(e.target)) closePop(); }, true);
+const onOff = on => `<span class="st ${on ? 'on' : ''}">${on ? 'ON' : 'OFF'}</span>`;
+
+function buildClipPop(p, c) {
+  const ov = S.mode === 'overlay' && c === B, dis = c.loaded ? '' : 'disabled';
+  const fpsOpts = `<option value="auto">${c.fpsEst ? `自動 (${c.fpsEst})` : '自動'}</option>` + [24, 30, 60, 120, 240].map(f => `<option value="${f}">${f}</option>`).join('');
+  p.innerHTML = `<div class="pop-title"><span class="tag t${c.id}">${c.id}</span>${esc(c.name || '未選択')}</div>
+    <button class="mi" data-a="lib">${ic('image')}<span class="grow">動画一覧から選ぶ</span></button>
+    <button class="mi" data-a="file">${ic('folder')}<span class="grow">ファイル / カメラロール</span></button>
+    <hr>
+    <button class="mi" data-a="autobat" ${dis}>${ic('trail')}<span class="grow">${batJob ? '自動作成を停止' : 'バットの軌跡を自動で描く'}</span></button>
+    <button class="mi" data-a="mirror" ${dis}>${ic('mirror')}<span class="grow">左右反転</span>${onOff(c.mirror)}</button>
+    <button class="mi" data-a="pose" ${dis}>${ic('pose')}<span class="grow">骨格の自動検出</span>${onOff(c.pose)}</button>
+    <button class="mi" data-a="analyze" ${c.pose && c.loaded ? '' : 'disabled'}>${ic('scan')}<span class="grow">${analyzing ? '解析を中止' : '全フレームの骨格を先に解析'}</span></button>
+    <div class="mrow small">コマ送りfps <select data-a="fps" ${dis}>${fpsOpts}</select></div>
+    ${S.mode === 'overlay' ? `<hr>${ov ? `<div class="mrow small">${ic('opacity')}透明度 <input type="range" data-a="alpha" min="0" max="100" value="${Math.round(S.bAlpha * 100)}"></div>` : ''}
+    <button class="mi" data-a="movehere" ${dis}>${ic('moveB')}<span class="grow">${c.id} を動かす（ツールの「移動」）</span></button>
+    <button class="mi" data-a="preset">${ic('reset')}<span class="grow">${c.id} の位置・大きさをリセット</span></button>` : ''}
+    ${c.loaded || c.relink ? `<hr><button class="mi" data-a="close">${ic('x')}<span class="grow">動画を閉じる</span></button>` : ''}`;
+  const sel = p.querySelector('[data-a=fps]'); if (sel) sel.value = c.fpsAuto ? 'auto' : String(c.fps);
+  p.onclick = e => {
+    const b = e.target.closest('button[data-a]'); if (!b || b.disabled) return;
+    const a = b.dataset.a;
+    if (a === 'lib') return openLibrary(c.id);
+    if (a === 'file') return pickFile(c.id);
+    if (a === 'mirror') { c.mirror = !c.mirror; applyCss(); }
+    if (a === 'pose') togglePose(c);
+    if (a === 'analyze') { closePop(); analyzeAll(c); return; }
+    if (a === 'autobat') { closePop(); autoBat(c); return; }
+    if (a === 'preset') { c.place = { s: 1, tx: 0, ty: 0 }; applyCss(); }
+    if (a === 'movehere') { closePop(); S.moveTarget = c.id; setTool('moveB'); return; }
+    if (a === 'close') { closePop(); clearClip(c); return; }
+    updateUI(); rerenderPop();
+  };
+  p.onchange = e => {
+    if (e.target.dataset.a !== 'fps') return;
+    const v = e.target.value, old = c.fps; c.fpsAuto = v === 'auto'; c.fps = c.fpsAuto ? (c.fpsEst || 30) : +v;
+    c.poseCache.clear(); remapTrack(c, old); seek(c, c.v.currentTime); renderTicks(); updateUI();
+  };
+  p.oninput = e => { if (e.target.dataset.a === 'alpha') { S.bAlpha = e.target.value / 100; applyCss(); } };
+}
+function buildMorePop(p) {
+  p.innerHTML = `<button class="mi" data-a="angles">${ic('deg')}<span class="grow">骨格の角度表示</span>${onOff(S.angles)}</button>
+    <button class="mi" data-a="trail">${ic('trail')}<span class="grow">バットの軌跡を表示</span>${onOff(S.trail)}</button>
+    <button class="mi" data-a="loop">${ic('repeat')}<span class="grow">ループ再生</span>${onOff(S.loop)}</button><hr>
+    <button class="mi" data-a="fit">${ic('zoom')}<span class="grow">拡大をリセット</span></button>
+    <button class="mi" data-a="png">${ic('image')}<span class="grow">画像として保存</span></button>
+    <button class="mi" data-a="help">${ic('help')}<span class="grow">使い方・設定</span></button>`;
+  p.onclick = e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'angles') { S.angles = !S.angles; LS.set('angles', S.angles); }
+    if (a === 'trail') { S.trail = !S.trail; if (!S.trail && S.tool === 'track') setTool('select'); if (S.trail && ![A, B].some(c => c.track.size)) toast('ツールの「軌跡」を押すとバットの軌跡を自動で描きます', 3500); updateUI(); }
+    if (a === 'loop') { S.loop = !S.loop; A.v.loop = B.v.loop = S.loop; }
+    if (a === 'fit') { for (const st of ST) st.z = { s: 1, x: 0, y: 0 }; applyCss(); closePop(); return; }
+    if (a === 'png') { closePop(); exportPNG(); return; }
+    if (a === 'help') { closePop(); $('#helpModal').classList.add('open'); return; }
+    dirty = true; rerenderPop();
+  };
+  p.onchange = p.oninput = null;
+}
+function buildStylePop(p) {
+  p.innerHTML = `<div class="swatches">${COLORS.map(c => `<button class="sw ${c === S.color ? 'on' : ''}" data-a="color" data-v="${c}" style="background:${c}" aria-label="色"></button>`).join('')}</div>
+    <div class="mrow small">太さ <div class="seg">${WIDTHS.map((w, i) => `<button data-a="width" data-v="${i}" class="${i === S.widthIdx ? 'on' : ''}">${w[1]}</button>`).join('')}</div></div><hr>
+    <button class="mi" data-a="clear">${ic('trash')}<span class="grow">この画面の図形を全消去</span></button>`;
+  p.onclick = e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'color') { S.color = b.dataset.v; for (const st of ST) if (st.sel) { pushUndo(st); st.sel.color = S.color; } }
+    if (a === 'width') { S.widthIdx = +b.dataset.v; for (const st of ST) if (st.sel) { pushUndo(st); st.sel.w = curW(); } }
+    if (a === 'clear') { const st = activeStage(); if (st.shapes.length) { pushUndo(st); st.shapes = []; st.sel = null; st.draft = null; } closePop(); updateUI(); return; }
+    updateUI(); rerenderPop();
+  };
+  p.onchange = p.oninput = null;
+}
+function buildMarkPop(p) {
+  const c = clips[S.active].loaded ? clips[S.active] : (A.loaded ? A : clips[S.active]);
+  const pre = PRESETS[S.preset];
+  let h = `<div class="pop-title">${ic('flag')}タイミング・マーカー</div>
+    <div class="mrow small">種目 <select data-a="preset">${Object.entries(PRESETS).map(([k, v]) => `<option value="${k}">${v.name}</option>`).join('')}</select></div>`;
+  if (!c.loaded) h += '<div class="mrow small muted">動画を読み込むとマーカーを付けられます</div>';
+  else {
+    h += `<div class="mrow small muted">今のコマ（${frameIdx(c) + 1}）を <span class="tag t${c.id}">${c.id}</span> の…</div>`;
+    if (pre.labels.length) h += `<div class="chips mrow">${pre.labels.map(l => { const has = c.markers.some(m => m.label === l); return `<button data-a="mark" data-l="${esc(l)}" class="${has ? 'set' : ''}" style="--mc:${markColor(l)}">${esc(l)}${has ? ' ✓' : ''}</button>`; }).join('')}</div>`;
+    h += `<div class="mrow"><input type="text" data-a="freeL" placeholder="自由な名前" maxlength="12"><button data-a="free">追加</button></div>`;
+  }
+  for (const x of [A, B].filter(x => x.loaded && isShown(x) && x.markers.length)) {
+    const ms = x.markers;
+    h += `<hr><div class="mrow small"><span class="tag t${x.id}">${x.id}</span><span class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">${esc(x.name)}</span></div><table class="mt">`;
+    ms.forEach((m, i) => {
+      h += `<tr><td><i class="dotc" style="background:${markColor(m.label)}"></i>${esc(m.label)}</td><td class="num">${mFrame(x, m) + 1}コマ</td>
+        <td class="num">${i ? '+' + realDt(x, m.t - ms[i - 1].t).toFixed(3) + 's' : '—'}</td>
+        <td><button data-a="jump" data-c="${x.id}" data-i="${i}">移動</button><button data-a="delm" data-c="${x.id}" data-i="${i}" aria-label="削除">✕</button></td></tr>`;
+    });
+    if (ms.length > 2) h += `<tr class="tot"><td colspan="2">${esc(ms[0].label)} → ${esc(ms[ms.length - 1].label)}</td><td class="num">${realDt(x, ms[ms.length - 1].t - ms[0].t).toFixed(3)}s</td><td></td></tr>`;
+    h += `</table><div class="mrow small muted">時間計算fps <input type="number" data-a="tfps" data-c="${x.id}" min="1" max="2000" placeholder="${x.fps}" value="${x.timeFps || ''}" style="width:76px"></div>`;
+  }
+  if (A.loaded && B.loaded && S.mode !== 'single') {
+    const common = A.markers.map(m => m.label).filter(l => B.markers.some(m => m.label === l));
+    if (common.length) {
+      h += '<hr><div class="mrow"><b>A・B 比較</b></div>';
+      if (common.length > 1) {
+        h += '<table class="mt"><tr class="th"><td>区間</td><td class="num">A</td><td class="num">B</td><td class="num">差(B−A)</td></tr>';
+        for (let i = 1; i < common.length; i++) {
+          const a = markerDt(A, common[i - 1], common[i]), b = markerDt(B, common[i - 1], common[i]), d = b - a;
+          h += `<tr><td>${esc(common[i - 1])}→${esc(common[i])}</td><td class="num">${a.toFixed(3)}s</td><td class="num">${b.toFixed(3)}s</td><td class="num">${d >= 0 ? '+' : ''}${d.toFixed(3)}s</td></tr>`;
+        }
+        h += '</table>';
+      }
+      h += `<div class="chips mrow">${common.map(l => `<button data-a="syncAt" data-l="${esc(l)}" style="--mc:${markColor(l)}">${ic('link')}「${esc(l)}」で同期</button>`).join('')}</div>`;
+    }
+  }
+  if (c.loaded && !c.markers.length && !(B.loaded && B.markers.length)) h += '<div class="mrow small muted">例: 着地とインパクトを付けると、その間の秒数が出ます。</div>';
+  p.innerHTML = h;
+  p.querySelector('[data-a=preset]').value = S.preset;
+  p.onclick = e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const a = b.dataset.a;
+    if (a === 'mark') addMarker(c, b.dataset.l);
+    if (a === 'free') { const inp = p.querySelector('[data-a=freeL]'), v = inp.value.trim(); if (v) addMarker(c, v); }
+    if (a === 'jump') { const x = clips[b.dataset.c]; jumpTo(x, x.markers[+b.dataset.i].t); setTimeout(rerenderPop, 50); }
+    if (a === 'delm') { const x = clips[b.dataset.c]; x.markers.splice(+b.dataset.i, 1); renderTicks(); dirty = true; rerenderPop(); }
+    if (a === 'syncAt') syncAt(b.dataset.l);
+  };
+  p.onchange = e => {
+    const t = e.target, a = t.dataset.a;
+    if (a === 'preset') { S.preset = t.value; LS.set('preset', S.preset); rerenderPop(); }
+    if (a === 'tfps') { const x = clips[t.dataset.c], v = +t.value; x.timeFps = v > 0 ? v : null; rerenderPop(); }
+  };
+  p.oninput = null;
+  const fl = p.querySelector('[data-a=freeL]'); if (fl) fl.onkeydown = e => { if (e.key === 'Enter') p.querySelector('[data-a=free]').click(); };
+}
+const RATES = [0.1, 0.2, 0.25, 0.5, 1, 1.25, 2];
+function buildRatePop(p) {
+  p.innerHTML = `<div class="pop-title">再生速度</div><div class="rates">${RATES.map(r => `<button data-a="rate" data-v="${r}" class="${r === S.rate ? 'on' : ''}">${r}x</button>`).join('')}</div>`;
+  p.onclick = e => { const b = e.target.closest('button[data-a=rate]'); if (!b) return; setRate(+b.dataset.v); closePop(); };
+  p.onchange = p.oninput = null;
+}
+function togglePose(c) {
+  if (c.tainted) return toast('この動画は骨格検出できません', 5000);
+  c.pose = !c.pose; if (c.pose) getLM().catch(() => { c.pose = false; updateUI(); });
+  updateUI();
+}
+
+// ---------- UI wiring ----------
+function updateUI() {
+  $$('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  $$('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === S.tool));
+  $('[data-tool=track]').classList.toggle('on', trackShown()); // lit while the path is showing
+  $('#rateVal').textContent = S.rate + 'x';
+  $('#rateBtn').classList.toggle('on', S.rate !== 1);
+  const dotEl = $('#styleBtn .dot'); dotEl.style.background = S.color; dotEl.style.transform = `scale(${[.65, .85, 1.1][S.widthIdx]})`;
+  ST[0].el.classList.toggle('active', S.active === 'A' || S.mode === 'single');
+  ST[1].el.classList.toggle('active', S.active === 'B' && S.mode !== 'single');
+  for (const c of [A, B]) {
+    $('#name' + c.id).textContent = c.name || '未選択';
+    const pb = $(`[data-pose="${c.id}"]`); pb.classList.toggle('on', c.pose); pb.disabled = !c.loaded;
+  }
+  const m = master();
+  const playing = m.loaded && !m.v.paused;
+  $('#playBtn').innerHTML = ic(playing ? 'pause' : 'play') + `<span class="cap">${playing ? '停止' : '再生'}</span>`;
+  $('#linkBtn').classList.toggle('on', S.linked && linkable());
+  $('#linkBtn').disabled = S.mode === 'single';
+  $('#markBtn').classList.toggle('on', !!(POP && POP.key === 'mark'));
+  $('#delBtn').hidden = !ST.some(st => st.sel);
+  $('#polyDone').hidden = !ST.some(st => st.draft && st.draft.type === 'poly' && st.draft.pts.length >= 2);
+  $('#moveBar').hidden = S.tool !== 'moveB';
+  $$('#moveSeg button').forEach(b => b.classList.toggle('on', b.dataset.mv === S.moveTarget));
+  const tb = $('#trackBar'); tb.hidden = S.tool !== 'track';
+  if (S.tool === 'track') {
+    const tc = trackClip(activeStage());
+    $('#trackTag').textContent = tc.id; $('#trackTag').className = 'tag t' + tc.id;
+    $('#trackCount').textContent = tc.track.size ? `${tc.track.size}点` : '';
+    $('#trackAdv').textContent = '次のコマへ: ' + (S.trackAdv ? 'ON' : 'OFF'); $('#trackAdv').classList.toggle('on', S.trackAdv);
+    $('#trackAuto').textContent = batJob ? '停止' : '自動で描く';
+    $('#trackDel').disabled = !tc.track.size; $('#trackClear').disabled = !tc.track.size;
+  }
+  $('#modelSel').value = S.model;
+  for (const st of ST) renderEmpty(st);
+  renderTicks();
+  dirty = true;
+}
+
+$$('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$$('[data-tool]').forEach(b => b.onclick = () => {
+  closePop();
+  if (b.dataset.tool === 'track') return toggleTrack();
+  setTool(b.dataset.tool);
+});
+// 軌跡 button = show / hide the bat path (nothing is deleted). Showing a video that has no path yet starts drawing one.
+function trackShown() { return S.tool === 'track' || (S.trail && [A, B].some(c => c.loaded && isShown(c) && c.track.size)); }
+function toggleTrack() {
+  if (trackShown()) {
+    if (batJob) { batJob.cancel = true; batJob.hidden = true; }
+    S.trail = false; if (S.tool === 'track') setTool('select');
+    toast('軌跡を非表示にしました（もう一度押すと表示）');
+  } else {
+    S.trail = true; setTool('track');
+    const c = trackClip(activeStage());
+    if (c.loaded && !c.track.size && !batJob) autoBat(c);
+  }
+  dirty = true; updateUI();
+}
+$$('[data-pose]').forEach(b => b.onclick = () => togglePose(clips[b.dataset.pose]));
+$$('[data-menu]').forEach(b => b.onclick = () => openPop('clip' + b.dataset.menu, b, p => buildClipPop(p, clips[b.dataset.menu])));
+$$('[data-efile]').forEach(b => b.onclick = () => pickFile(b.dataset.efile));
+$$('[data-elib]').forEach(b => b.onclick = () => openLibrary(b.dataset.elib));
+$$('.stage-head').forEach(h => h.addEventListener('pointerdown', () => setActive(h.dataset.clip)));
+$('#moreBtn').onclick = e => openPop('more', e.currentTarget, buildMorePop);
+$('#styleBtn').onclick = e => openPop('style', e.currentTarget, buildStylePop);
+$('#markBtn').onclick = e => { openPop('mark', e.currentTarget, buildMarkPop); updateUI(); };
+$('#sessBtn').onclick = openSessions;
+$('#libBtn').onclick = () => openLibrary('A');
+$('#libClose').onclick = closeLibrary;
+$('#libAdd').onclick = () => LIB.mode === 'B' ? pickFile('B') : $('#libIn').click();
+$('#libIn').addEventListener('change', e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) importFiles(fs); });
+$('#libResumeOpen').onclick = () => { if (lastSess) openSession(lastSess); };
+$('#polyDone').onclick = () => ST.forEach(commitDraft);
+$$('#moveSeg button').forEach(b => b.onclick = () => { S.moveTarget = b.dataset.mv; updateUI(); });
+$('#moveReset').onclick = () => { moveClip().place = { s: 1, tx: 0, ty: 0 }; applyCss(); };
+$('#trackAdv').onclick = () => { S.trackAdv = !S.trackAdv; LS.set('trackAdv', S.trackAdv); updateUI(); };
+$('#trackAuto').onclick = () => autoBat();
+$('#trackDel').onclick = () => {
+  const c = trackClip(activeStage()), f = frameIdx(c), prev = c.track.get(f); if (!prev) return toast('このコマには点がありません');
+  trackUndo.push({ c, f, prev }); c.track.delete(f); dirty = true; updateUI();
+};
+$('#trackClear').onclick = () => {
+  const c = trackClip(activeStage()); if (!c.track.size) return;
+  if (!confirm(`${c.id} の軌跡（${c.track.size}点）をすべて消しますか？`)) return;
+  c.track = new Map(); trackUndo = trackUndo.filter(u => u.c !== c); dirty = true; updateUI();
+};
+$('#undoBtn').onclick = undo;
+$('#delBtn').onclick = delSel;
+$('#playBtn').onclick = togglePlay;
+// frame-step buttons: tap = 1 step, hold = keep stepping
+function holdRepeat(btn, fn) {
+  let t1 = 0, t2 = 0;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); stop(); fn(); t1 = setTimeout(() => { t2 = setInterval(fn, 70); }, 380); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, stop);
+  btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); fn(); } });
+}
+holdRepeat($('#back1'), () => step(-1)); holdRepeat($('#fwd1'), () => step(1));
+holdRepeat($('#back10'), () => step(-10)); holdRepeat($('#fwd10'), () => step(10));
+$('#rateBtn').onclick = e => openPop('rate', e.currentTarget, buildRatePop);
+$('#linkBtn').onclick = () => {
+  if (S.linked) { S.linked = false; S.pendingLink = null; toast('同期を解除しました'); }
+  else if (!linkable()) return toast('A・B両方を読み込んでから使ってください');
+  else { for (const c of [A, B]) c.v.pause(); S.offset = B.v.currentTime - A.v.currentTime; S.linked = true; toast('今のフレーム同士で同期しました'); }
+  updateUI(); rerenderPop();
+};
+$$('.modal').forEach(m => m.addEventListener('pointerdown', e => { if (e.target === m) m.classList.remove('open'); }));
+$$('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').classList.remove('open'));
+$('#modelSel').onchange = e => { S.model = e.target.value; LS.set('model', S.model); LM = null; lmLoading = null; A.poseCache.clear(); B.poseCache.clear(); if (A.pose || B.pose) getLM(); };
+$('#sessSave').onclick = () => {
+  if (!A.loaded && !B.loaded && !A.relink && !B.relink) return toast('動画を読み込んでから保存してください');
+  doSave('s' + Date.now().toString(36), $('#sessName').value.trim() || defaultName());
+};
+$('#sessOverwrite').onclick = () => { if (S.sessionId) doSave(S.sessionId, $('#sessName').value.trim() || S.sessionName || defaultName()); };
+$('#storeVid').onchange = e => { S.storeVideos = e.target.checked; LS.set('storeVideos', S.storeVideos); };
+$('#resumeX').onclick = hideResume;
+
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input[type=text],input[type=password],input[type=number],textarea,select')) return;
+  const k = e.key;
+  if (k === ' ') { e.preventDefault(); togglePlay(); }
+  else if (k === 'ArrowRight') { e.preventDefault(); step(e.shiftKey ? 10 : 1); }
+  else if (k === 'ArrowLeft') { e.preventDefault(); step(e.shiftKey ? -10 : -1); }
+  else if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); delSel(); }
+  else if (k === 'Enter') ST.forEach(commitDraft);
+  else if (k === 'Escape') { for (const st of ST) { st.draft = null; st.sel = null; } closePop(); $$('.modal').forEach(m => m.classList.remove('open')); dirty = true; updateUI(); }
+  else if ((e.ctrlKey || e.metaKey) && k.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+  else if (k.toLowerCase() === 'm' && !e.ctrlKey && !e.metaKey) { const c = clips[S.active], l = nextLabel(c); if (l) addMarker(c, l); else toast('この種目のマーカーはすべて設定済みです'); }
+});
+
+// boot: start on the video list (pick a video to check); offer the previous analysis if there is one
+(function boot() {
+  updateUI(); ST.forEach(resize); requestAnimationFrame(loop);
+  openLibrary('A');
+  DB.get('sessions', '__last').then(s => {
+    if (!s || !(s.A || s.B) || A.loaded || B.loaded || A.url || B.url) return;
+    lastSess = s; renderLibrary();
+    $('#resumeTxt').textContent = '前回の分析: ' + sessNames(s).join(' / ');
+    $('#resume').hidden = false;
+    $('#resumeOpen').onclick = () => openSession(s);
+  }).catch(() => {});
+})();
+</script>
+</body>
+</html>
