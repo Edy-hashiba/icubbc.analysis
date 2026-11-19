@@ -496,7 +496,7 @@ function makeClip(id) {
   const c = { id, v, sc, name: '', url: null, fps: 30, fpsEst: null, fpsAuto: true, timeFps: null, mirror: false, pose: false,
     poseCache: new Map(), track: new Map(), tainted: false, loaded: false, place: { s: 1, tx: 0, ty: 0 }, markers: [],
     blob: null, src: null, videoStored: false, pendingRestore: null, relink: null, status: '', dlToken: 0,
-    fcache: new Map(), want: null, pending: false, angles: false };
+    fcache: new Map(), fdec: new Map(), scWant: null, scOn: false, want: null, pending: false, angles: false };
   v.addEventListener('loadedmetadata', () => { c.loaded = true; c.status = ''; applyCss(); updateUI(); });
   v.addEventListener('loadeddata', () => { if (c.fpsEst == null) estimateFps(c); });
   v.addEventListener('timeupdate', () => dirty = true);
@@ -525,44 +525,69 @@ const ST = [makeStage(0), makeStage(1)];
 ST[0].wrap.append(A.v, A.sc);
 ST[1].wrap.append(B.v, B.sc);
 
-// ---------- smooth scrubbing: frames are kept as small pictures, shown instantly while the video is still seeking ----------
-// Phones seek slowly, so pictures are prepared ahead in the background (see prefetch). They are smaller on phones to fit memory;
-// the real (sharp) frame replaces the picture as soon as you stop.
+// ---------- smooth scrubbing: frames are kept as pictures, shown instantly while the video is still seeking ----------
+// Phones seek slowly, so pictures are also prepared ahead in the background (see prefetch). Pictures keep the video's own
+// resolution (long side up to 1920 px) and are stored as high-quality JPEG (q .92, ~1/20 of raw size); a few are kept decoded
+// for instant drawing, and they are drawn at the screen's real pixel density (and zoom), so scrubbing stays sharp.
 const PHONE = /iPhone|iPad|iPod|Android|Mobi/i.test(navigator.userAgent);
-const FC = { max: (PHONE ? 96 : (navigator.deviceMemory || 8) <= 4 ? 96 : 200) * 1048576, bytes: 0, scale: PHONE ? .6 : 1 };
+const FC = { max: (PHONE ? 120 : 320) * 1048576, bytes: 0, long: 1920, dec: PHONE ? 5 : 12 };
 const stageOf = c => (c === B && S.mode !== 'overlay') ? ST[1] : ST[0];
-function picSize(c) { const r = contentRect(c, stageOf(c)); return [Math.max(2, Math.round(r.w * FC.scale)), Math.max(2, Math.round(r.h * FC.scale))]; }
+const fcCanvas = document.createElement('canvas'), fcCtx = fcCanvas.getContext('2d');
+function picDims(src) { const k = Math.min(1, FC.long / Math.max(src.videoWidth || 1, src.videoHeight || 1)); return [Math.max(2, Math.round(src.videoWidth * k)), Math.max(2, Math.round(src.videoHeight * k))]; }
+const picBytes = c => { const [w, h] = picDims(c.v); return Math.max(20000, w * h * .22); }; // typical JPEG size, for planning
 function fcStore(c, f = frameIdx(c), src = c.v) {
-  if (!c.loaded || src.readyState < 2 || c.fcache.has(f)) return;
-  const [w, h] = picSize(c);
-  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-  try { cv.getContext('2d').drawImage(src, 0, 0, w, h); } catch (e) { return; }
-  c.fcache.set(f, cv); FC.bytes += w * h * 4;
-  while (FC.bytes > FC.max) { // over the limit: drop the picture farthest from where that video currently is
+  if (!c.loaded || src.readyState < 2 || c.fcache.has(f) || !src.videoWidth) return;
+  const [w, h] = picDims(src);
+  if (fcCanvas.width !== w || fcCanvas.height !== h) { fcCanvas.width = w; fcCanvas.height = h; }
+  try { fcCtx.drawImage(src, 0, 0, w, h); } catch (e) { return; }
+  const url = c.url, entry = { blob: null, w, h, bm: null, decoding: null };
+  c.fcache.set(f, entry); // reserved while it is being encoded
+  fcCanvas.toBlob(b => { // the canvas is copied at call time, so it can be reused right away
+    if (!b || c.url !== url || c.fcache.get(f) !== entry) { if (c.fcache.get(f) === entry) c.fcache.delete(f); return; }
+    entry.blob = b; FC.bytes += b.size; fcTrim();
+  }, 'image/jpeg', .92);
+}
+function fcDrop(c, k) { const e = c.fcache.get(k); if (!e) return; if (e.blob) FC.bytes -= e.blob.size; if (e.bm) e.bm.close(); c.fdec.delete(k); c.fcache.delete(k); }
+function fcTrim() { // over the limit: drop the picture farthest from where that video currently is
+  while (FC.bytes > FC.max) {
     const o = A.fcache.size >= B.fcache.size ? A : B, cur = frameIdx(o); let far = null, fd = -1;
-    for (const k of o.fcache.keys()) { const d = Math.abs(k - cur); if (d > fd) { fd = d; far = k; } }
-    if (far === null) break;
-    const old = o.fcache.get(far); FC.bytes -= old.width * old.height * 4; o.fcache.delete(far);
+    for (const [k, e] of o.fcache) if (e.blob) { const d = Math.abs(k - cur); if (d > fd) { fd = d; far = k; } }
+    if (far === null) break; fcDrop(o, far);
   }
 }
-function fcClear(c) { for (const cv of c.fcache.values()) FC.bytes -= cv.width * cv.height * 4; c.fcache.clear(); hideScrub(c); }
-function fcNear(c, f) { // the frame itself, or the closest prepared one within a couple of frames
-  if (c.fcache.has(f)) return c.fcache.get(f);
-  const r = Math.max(2, Math.round(c.fps / 15));
-  for (let d = 1; d <= r; d++) { if (c.fcache.has(f - d)) return c.fcache.get(f - d); if (c.fcache.has(f + d)) return c.fcache.get(f + d); }
-  return null;
+function fcClear(c) { for (const k of [...c.fcache.keys()]) fcDrop(c, k); hideScrub(c); }
+function fcDecode(c, f) { // keep a few pictures decoded (least recently used are released)
+  const e = c.fcache.get(f); if (!e || !e.blob || e.bm || e.decoding) return;
+  e.decoding = createImageBitmap(e.blob).then(bm => {
+    e.decoding = null;
+    if (c.fcache.get(f) !== e) { bm.close(); return; }
+    e.bm = bm; c.fdec.set(f, true);
+    while (c.fdec.size > FC.dec) { const k = c.fdec.keys().next().value; c.fdec.delete(k); const o = c.fcache.get(k); if (o && o.bm) { o.bm.close(); o.bm = null; } }
+    if (c.scOn && c.scWant === f) drawScrub(c, e); // it is still the frame being asked for
+  }).catch(() => { e.decoding = null; });
 }
-function showScrub(c, f) {
-  const pic = fcNear(c, f);
-  if (!pic) { hideScrub(c); return; } // nothing prepared nearby: let the video itself show it when its seek finishes
+function drawScrub(c, e) { // drawn at the screen's real pixel density × zoom, so it is as sharp as the video itself
   const st = stageOf(c), r = contentRect(c, st), sc = c.sc;
-  if (sc.width !== Math.round(st.w) || sc.height !== Math.round(st.h)) { sc.width = Math.round(st.w); sc.height = Math.round(st.h); }
-  const ctx = sc.getContext('2d'); ctx.clearRect(0, 0, sc.width, sc.height); ctx.drawImage(pic, r.x, r.y, r.w, r.h);
+  const k = Math.min((window.devicePixelRatio || 1) * st.z.s * Math.max(1, placeOf(c, st).s), (PHONE ? 2400 : 4096) / Math.max(st.w, st.h));
+  const W = Math.round(st.w * k), H = Math.round(st.h * k);
+  if (sc.width !== W || sc.height !== H) { sc.width = W; sc.height = H; }
+  const ctx = sc.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+  ctx.imageSmoothingQuality = 'high'; ctx.drawImage(e.bm, r.x * k, r.y * k, r.w * k, r.h * k);
   sc.hidden = false;
 }
-function hideScrub(c) { if (!c.sc.hidden) c.sc.hidden = true; }
+function showScrub(c, f) {
+  c.scWant = f; c.scOn = true;
+  const r = Math.max(2, Math.round(c.fps / 15)), near = [];
+  for (let d = 0; d <= r; d++) for (const k of d ? [f - d, f + d] : [f]) { const e = c.fcache.get(k); if (e && e.blob) near.push(k); }
+  if (!near.length) { hideScrub(c); return; } // nothing prepared nearby: let the video itself show it when its seek finishes
+  const ready = near.find(k => c.fcache.get(k).bm);
+  if (ready != null) { const e = c.fcache.get(ready); c.fdec.delete(ready); c.fdec.set(ready, true); drawScrub(c, e); }
+  if (ready !== f) fcDecode(c, near[0]);           // the exact frame comes in a moment
+  for (const k of [f + 1, f - 1, f + 2]) fcDecode(c, k); // and the next steps are decoded ahead
+}
+function hideScrub(c) { c.scOn = false; if (!c.sc.hidden) c.sc.hidden = true; }
 function hideScrubSoon(c) { // once the video has actually painted the frame it was asked for
-  if (c.sc.hidden) return;
+  if (c.sc.hidden) { c.scOn = false; return; }
   if (c.v.requestVideoFrameCallback) c.v.requestVideoFrameCallback(() => { if (!c.pending && !c.v.seeking) hideScrub(c); });
   setTimeout(() => { if (!c.pending && !c.v.seeking) hideScrub(c); }, 150);
 }
@@ -1356,8 +1381,8 @@ function pfNext() { // per video: the nearest frame still missing a picture (wit
   const both = A.loaded && B.loaded && S.mode !== 'single';
   for (const c of [A, B]) {
     if (!c.loaded || c.tainted || !c.url || !isShown(c) || c.pendingRestore) continue;
-    const N = totalFrames(c), cur = frameIdx(c), [w, h] = picSize(c);
-    const picRange = Math.floor(FC.max * .85 / (w * h * 4) / (both ? 2 : 1) / 2), wantPose = c.pose && !!LM;
+    const N = totalFrames(c), cur = frameIdx(c), per = picBytes(c);
+    const picRange = Math.floor(FC.max * .85 / per / (both ? 2 : 1) / 2), wantPose = c.pose && !!LM;
     for (let d = 0; d < N && (!best || d < best.d); d++) {
       const hit = (d ? [cur + d, cur - d] : [cur]).find(f => f >= 0 && f < N &&
         ((d <= picRange && !c.fcache.has(f)) || (wantPose && !c.poseCache.has(f))));
